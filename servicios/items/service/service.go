@@ -136,8 +136,8 @@ func (s *itemService) NewItems(itemsDto dto.Items) (dto.Items, e.ApiError) {
 
 }
 
-func (s *itemService) Deleteitem(id int) e.ApiError {
-	err := cliente.Deleteitem(id)
+func (s *itemService) DeleteItem(id int) e.ApiError {
+	err := cliente.DeleteItem(id)
 
 	return err
 }
