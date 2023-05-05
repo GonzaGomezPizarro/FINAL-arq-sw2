@@ -18,6 +18,12 @@ func init() {
 	// Configura la conexión a la base de datos
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
+	// Agrega la credencial al objeto clientOptions
+	clientOptions.Auth = &options.Credential{
+		Username: "root",
+		Password: "CONTRASENA",
+	}
+
 	// Conecta con la base de datos
 	var err error
 	client, err = mongo.Connect(context.Background(), clientOptions)
