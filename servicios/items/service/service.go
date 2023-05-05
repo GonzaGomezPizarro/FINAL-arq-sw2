@@ -10,11 +10,11 @@ import (
 type itemService struct{}
 
 type itemServiceInterface interface {
-	GetItemById(id int) (dto.Item, e.ApiError)
+	GetItemById(id string) (dto.Item, e.ApiError)
 	GetItems() (dto.Items, e.ApiError)
 	NewItem(ItemDto dto.Item) (dto.Item, e.ApiError)
 	NewItems(ItemsDto dto.Items) (dto.Items, e.ApiError)
-	DeleteItem(id int) e.ApiError
+	DeleteItem(id string) e.ApiError
 }
 
 var jwtKey = []byte("secret_key")
@@ -27,16 +27,16 @@ func init() {
 	ItemService = &itemService{}
 }
 
-func (s *itemService) GetItemById(id int) (dto.Item, e.ApiError) {
+func (s *itemService) GetItemById(id string) (dto.Item, e.ApiError) {
 
-	var item model.Item = cliente.GetItemById(id)
+	item, error := cliente.GetItemById(id)
 	var itemDto dto.Item
 
-	if item.Id == 0 {
-		return itemDto, e.NewBadRequestApiError("item not found")
+	if error != nil {
+		return itemDto, e.NewNotFoundApiError("item not found")
 	}
 
-	itemDto.Id = item.Id
+	itemDto.Id = item.Id.Hex()
 	itemDto.Title = item.Title
 	itemDto.Description = item.Description
 	itemDto.UserId = item.UserId
@@ -51,13 +51,17 @@ func (s *itemService) GetItemById(id int) (dto.Item, e.ApiError) {
 
 func (s *itemService) GetItems() (dto.Items, e.ApiError) {
 
-	var items model.Items = cliente.GetItems()
+	items, error := cliente.GetItems()
 	var itemsDto dto.Items
+
+	if error != nil {
+		return itemsDto, e.NewNotFoundApiError("item not found")
+	}
 
 	for _, item := range items {
 		var itemDto dto.Item
 
-		itemDto.Id = item.Id
+		itemDto.Id = item.Id.Hex()
 		itemDto.Title = item.Title
 		itemDto.Description = item.Description
 		itemDto.UserId = item.UserId
@@ -86,9 +90,9 @@ func (s *itemService) NewItem(itemDto dto.Item) (dto.Item, e.ApiError) {
 	item.City = itemDto.City
 
 	var err e.ApiError
-	item, err = cliente.Newitem(item)
+	item, err = cliente.NewItem(item)
 
-	itemDto.Id = item.Id
+	itemDto.Id = item.Id.Hex()
 
 	return itemDto, err
 
@@ -114,17 +118,18 @@ func (s *itemService) NewItems(itemsDto dto.Items) (dto.Items, e.ApiError) {
 	var err e.ApiError
 	items, err = cliente.NewItems(items)
 
+	if err != nil {
+		return itemsDto, err
+	}
+
 	var itemssDto dto.Items
 	for _, item := range items {
-		if item.Id == 0 {
-			return itemsDto, e.NewBadRequestApiError("Something went wrong when creating, some items might have been created, but some not")
-		}
 		var itemDto dto.Item
 		itemDto.Address = item.Address
 		itemDto.City = item.City
 		itemDto.Country = item.Country
 		itemDto.State = item.State
-		itemDto.Id = item.Id
+		itemDto.Id = item.Id.Hex()
 		itemDto.Description = item.Description
 		itemDto.Title = item.Title
 		itemDto.UserId = item.UserId
@@ -136,8 +141,7 @@ func (s *itemService) NewItems(itemsDto dto.Items) (dto.Items, e.ApiError) {
 
 }
 
-func (s *itemService) DeleteItem(id int) e.ApiError {
+func (s *itemService) DeleteItem(id string) e.ApiError {
 	err := cliente.DeleteItem(id)
-
 	return err
 }

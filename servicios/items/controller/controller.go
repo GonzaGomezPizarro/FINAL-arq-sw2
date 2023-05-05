@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/dto"
 	service "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/service"
@@ -15,7 +14,7 @@ var jwtKey = []byte("secret_key")
 
 func GetItemById(c *gin.Context) {
 	log.Debug("Item id to load: " + c.Param("id"))
-	id, _ := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
 	var itemDto dto.Item
 
 	itemDto, err := service.ItemService.GetItemById(id)
@@ -87,14 +86,7 @@ func NewItems(c *gin.Context) {
 
 func DeleteItem(c *gin.Context) {
 	// Obtener el ID del item a eliminar desde los parámetros de la URL
-	itemIDStr := c.Param("id")
-	itemID, err := strconv.Atoi(itemIDStr)
-
-	if err != nil {
-		log.Error(err.Error())
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
+	itemID := c.Param("id")
 
 	// Llamar al servicio para eliminar el usuario
 	errr := service.ItemService.DeleteItem(itemID)

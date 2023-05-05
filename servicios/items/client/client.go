@@ -5,15 +5,15 @@ import (
 	"errors"
 	"log"
 
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/database"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/model"
-	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/usuarios/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	e "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/usuarios/errors"
+	e "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/errors"
 )
 
-func GetItemByID(id string) (model.Item, error) {
+func GetItemById(id string) (model.Item, error) {
 	db := database.StartDBEngine()
 
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -66,7 +66,7 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 
 	res, err := collection.InsertOne(context.Background(), item)
 	if err != nil {
-		return model.Item{}, e.NewInternalServerError("Error al crear el item", err)
+		return model.Item{}, e.NewInternalServerApiError("Error al crear el item", err)
 	}
 
 	objectID := res.InsertedID.(primitive.ObjectID)
@@ -86,21 +86,18 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 	}
 	result, err := collection.InsertMany(context.Background(), documents)
 	if err != nil {
-		return nil, e.NewApiError("Error al insertar los items", err.Error(), 500)
+		return nil, e.NewApiError("Error al insertar los items", err.Error(), 500, e.CauseList{})
 	}
 
 	// Obtiene los IDs asignados por MongoDB a los nuevos items
-	objectIds, ok := result.InsertedIDs.([]interface{})
-	if !ok {
-		return nil, e.NewApiError("Error al obtener los IDs de los items insertados", "", 500)
-	}
+	objectIds := result.InsertedIDs
 	if len(objectIds) != len(items) {
-		return nil, e.NewApiError("Error al obtener los IDs de los items insertados", "", 500)
+		return nil, e.NewInternalServerApiError("Error al obtener los IDs de los items insertados", nil)
 	}
 	for i := 0; i < len(items); i++ {
 		id, ok := objectIds[i].(primitive.ObjectID)
 		if !ok {
-			return nil, e.NewApiError("Error al obtener los IDs de los items insertados", "", 500)
+			return nil, e.NewInternalServerApiError("Error al obtener los IDs de los items insertados", nil)
 		}
 		items[i].Id = id
 	}
@@ -114,13 +111,13 @@ func DeleteItem(itemId string) e.ApiError {
 
 	objectId, err := primitive.ObjectIDFromHex(itemId)
 	if err != nil {
-		return e.NewNotFoundError("No se encontró el item")
+		return e.NewNotFoundApiError("No se encontró el item")
 	}
 
 	filter := bson.M{"_id": objectId}
 	_, err = collection.DeleteOne(context.Background(), filter)
 	if err != nil {
-		return e.NewInternalServerError("Error al eliminar el item")
+		return e.NewInternalServerApiError("Error al eliminar el item", err)
 	}
 
 	return nil

@@ -32,7 +32,7 @@ func init() {
 	}
 
 	// Establece la base de datos por defecto
-	database = client.Database("nombre_de_la_base_de_datos")
+	database = client.Database("itemss")
 
 	fmt.Println("Conexión a la base de datos establecida correctamente.")
 }
