@@ -9,7 +9,11 @@ type Item struct {
 	City        string   `json:"city"`
 	Address     string   `json:"address"`
 	Photos      []string `json:"photos"`
-	UserId      int      `json:"user"`
+	Price       int      `json:"price"`
+	Bedrooms    int      `json:"bedrooms"`
+	Bathrooms   int      `json:"bathrooms"`
+	Mts2        int      `json:"mts2"`
+	UserId      int      `json:"userId"`
 }
 
 type Items []Item

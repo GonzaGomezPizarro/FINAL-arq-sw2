@@ -45,6 +45,10 @@ func (s *itemService) GetItemById(id string) (dto.Item, e.ApiError) {
 	itemDto.State = item.State
 	itemDto.Photos = item.Photos
 	itemDto.City = item.City
+	itemDto.Price = item.Price
+	itemDto.Bedrooms = item.Bedrooms
+	itemDto.Bathrooms = item.Bathrooms
+	itemDto.Mts2 = item.Mts2
 
 	return itemDto, nil
 }
@@ -70,6 +74,10 @@ func (s *itemService) GetItems() (dto.Items, e.ApiError) {
 		itemDto.State = item.State
 		itemDto.Photos = item.Photos
 		itemDto.City = item.City
+		itemDto.Price = item.Price
+		itemDto.Bedrooms = item.Bedrooms
+		itemDto.Bathrooms = item.Bathrooms
+		itemDto.Mts2 = item.Mts2
 
 		itemsDto = append(itemsDto, itemDto)
 	}
@@ -79,6 +87,7 @@ func (s *itemService) GetItems() (dto.Items, e.ApiError) {
 
 func (s *itemService) NewItem(itemDto dto.Item) (dto.Item, e.ApiError) {
 	var item model.Item
+	var newItem dto.Item
 
 	item.Title = itemDto.Title
 	item.Description = itemDto.Description
@@ -88,13 +97,29 @@ func (s *itemService) NewItem(itemDto dto.Item) (dto.Item, e.ApiError) {
 	item.State = itemDto.State
 	item.Photos = itemDto.Photos
 	item.City = itemDto.City
+	item.Price = itemDto.Price
+	item.Bedrooms = itemDto.Bedrooms
+	item.Bathrooms = itemDto.Bathrooms
+	item.Mts2 = itemDto.Mts2
 
 	var err e.ApiError
 	item, err = cliente.NewItem(item)
 
-	itemDto.Id = item.Id.Hex()
+	newItem.Id = item.Id.Hex()
+	newItem.Title = item.Title
+	newItem.Description = item.Description
+	newItem.UserId = item.UserId
+	newItem.Address = item.Address
+	newItem.Country = item.Country
+	newItem.State = item.State
+	newItem.Photos = item.Photos
+	newItem.City = item.City
+	newItem.Price = item.Price
+	newItem.Bedrooms = item.Bedrooms
+	newItem.Bathrooms = item.Bathrooms
+	newItem.Mts2 = item.Mts2
 
-	return itemDto, err
+	return newItem, err
 
 }
 
@@ -111,6 +136,10 @@ func (s *itemService) NewItems(itemsDto dto.Items) (dto.Items, e.ApiError) {
 		item.State = itemDto.State
 		item.Title = itemDto.Title
 		item.UserId = itemDto.UserId
+		item.Price = itemDto.Price
+		item.Bedrooms = itemDto.Bedrooms
+		item.Bathrooms = itemDto.Bathrooms
+		item.Mts2 = itemDto.Mts2
 
 		items = append(items, item)
 	}
@@ -134,6 +163,10 @@ func (s *itemService) NewItems(itemsDto dto.Items) (dto.Items, e.ApiError) {
 		itemDto.Title = item.Title
 		itemDto.UserId = item.UserId
 		itemDto.Photos = item.Photos
+		itemDto.Price = item.Price
+		itemDto.Bedrooms = item.Bedrooms
+		itemDto.Bathrooms = item.Bathrooms
+		itemDto.Mts2 = item.Mts2
 
 		itemssDto = append(itemssDto, itemDto)
 	}

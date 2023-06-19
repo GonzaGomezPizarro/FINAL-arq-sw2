@@ -11,6 +11,10 @@ type Item struct {
 	City        string             `bson:"city,omitempty"`
 	Address     string             `bson:"address,omitempty"`
 	Photos      []string           `bson:"photos,omitempty"`
+	Price       int                `bson:"price,omitempty"`
+	Bedrooms    int                `bson:"rooms,omitempty"`
+	Bathrooms   int                `bson:"bathrooms,omitempty"`
+	Mts2        int                `bson:"mts2,omitempty"`
 	UserId      int                `bson:"user,omitempty"`
 }
 
