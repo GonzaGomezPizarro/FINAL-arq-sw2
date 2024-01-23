@@ -16,7 +16,7 @@ var (
 
 func init() {
 
-	dsn := "user:pass@tcp(127.0.0.1:3306)/mensajes_db?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "user:pass@tcp(127.0.0.1:3307)/mensajes_db?charset=utf8mb4&parseTime=True&loc=Local" // 3307 o 3306 ??
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {

@@ -11,10 +11,13 @@ import (
 type messageService struct{}
 
 type messageServiceInterface interface {
+	GetMessageById(id int) (dto.Message, e.ApiError)
 	GetMessages() (dto.Messages, e.ApiError)
 	GetMessagesByUserId(id int) (dto.Messages, e.ApiError)
-	GetMessageById(id int) (dto.Message, e.ApiError)
+	GetMessagesByItemId(id string) (dto.Messages, e.ApiError)
+
 	PostMessage(messageDto dto.Message) (dto.Message, e.ApiError)
+
 	DeleteMessageById(id int) e.ApiError
 }
 
@@ -28,30 +31,23 @@ func init() {
 	MessageService = &umessageService{}
 }
 
-func (s *userService) GetUserById(id int) (dto.User, e.ApiError) {
-
-	var user model.User = cliente.GetUserById(id)
-	var userDto dto.User
-
-	if user.Id == 0 {
-		return userDto, e.NewBadRequestApiError("user not found")
-	}
-
-	userDto.Id = user.Id
-	userDto.Username = user.Username
-	userDto.Password = user.Password
-	userDto.Email = user.Email
-	userDto.FirstName = user.FirstName
-	userDto.LastName = user.LastName
-
-	return userDto, nil
-}
-
 func (s *messageService) GetMessageById(id int) (dto.Message, e.apiError) {
 	var message model.Message = cliente.GetMessageById(id)
+	var messageDto dto.Message
+
+	if message.Id == 0 {
+		return messageDto, e.NewBadRequestApiError("message not found")
+	}
+
+	messageDto.Id = message.Id
+	messageDto.Content = message.Content
+	messageDto.ItemId = message.ItemId
+	messageDto.ReceiverId = message.ReceiverId
+
+	return messageDto, nil
 }
 
-func (s *messageService) GetMessages() ([]dto.Message, error) {
+func (s *messageService) GetMessages() (dto.Messages, error) {
 	var messages model.Message = cliente.GetMessages()
 	var messagesDto dto.Messages
 
@@ -63,6 +59,34 @@ func (s *messageService) GetMessages() ([]dto.Message, error) {
 		messagesDto = append(messagesDto, messageDto)
 	}
 
+	return messagesDto, nil
+}
+
+func (s *messageService) GetMessagesByUserId(id int) (dto.Messages, e.ApiError) {
+	var messages model.Messages = cliente.GetMessagesByUserId(id)
+	var messagesDto dto.Messages
+
+	for _, message := range messages {
+		var messageDto dto.Message
+		messageDto.Id = message.Id
+		messageDto.Content = message.Content
+		messageDto.ReceiverId = message.ReceiverId
+		messagesDto = append(messagesDto, messageDto)
+	}
+	return messagesDto, nil
+}
+
+func (s *messageService) GetMessagesByItemId(id string) (dto.Messages, e.ApiError) {
+	var messages model.Messages = cliente.GetMessagesByItemId(id)
+	var messagesDto dto.Messages
+
+	for _, message := range messages {
+		var messageDto dto.Message
+		messageDto.Id = message.Id
+		messageDto.Content = message.Content
+		messageDto.ReceiverId = message.ReceiverId
+		messagesDto = append(messagesDto, messageDto)
+	}
 	return messagesDto, nil
 }
 
@@ -85,8 +109,33 @@ func (s *userService) NewUser(userDto dto.User) (dto.User, e.ApiError) {
 
 }
 
+func (s *messageService) PostMessage(messageDto dto.Message) (dto.Message, e.ApiError) {
+	var message model.Message
+
+	message.Content = messageDto.Content
+	message.ItemId = messageDto.ItemId
+	message.ReceiverId = messageDto.ReceiverId
+
+	var err e.ApiError
+	message, err = cliente.NewMessage(message)
+
+	messageDto.id = message.Id
+
+	return messageDto, err
+}
+
 func (s *userService) DeleteUser(id int) e.ApiError {
 	err := cliente.DeleteUser(id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *messageService) DeleteMessageById(id int) e.ApiError {
+	err := cliente.DeleteMessageById(id)
 
 	if err != nil {
 		return err

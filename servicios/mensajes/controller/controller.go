@@ -28,7 +28,7 @@ func GetMessages(c *gin.Context) {
 func GetMessagesByUserId(c *gin.Context) {
 	log.Debug("User id to load: " + c.Param("id"))
 
-	id, _ := c.Param("id")
+	id, _ := strconv.Atoi(c.Param("id"))
 	var messagesDto dto.Messages
 
 	messagesDto, err := service.MessageService.GetMessagesByUserId(id)
@@ -57,10 +57,21 @@ func GetMessageById(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, messageDto)
 }
-func GetMessageByItemId(c *gin.Context {
+func GetMessagesByItemId(c *gin.Context) {
 	log.Debug("Item id to load: " + c.Param("id"))
 
-	id, _ := strconv
+	id, _ := c.Param("id")
+	var messagesDto dto.Messages
+
+	messagesDto, err := service.MessageService.GetMessagesByItemId(id)
+
+	if err != nil {
+		c.JSON(err.Status(), err)
+		c.JSON(http.StatusBadRequest, err.Error())
+		log.Error(err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, messagesDto)
 }
 func PostMessage(c *gin.Context) {
 	var messageDto dto.Message

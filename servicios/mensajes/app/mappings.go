@@ -9,8 +9,9 @@ import (
 func mapUrls() {
 
 	router.GET("/messages", controller.GetMessages)
-	router.GET("/messages/:id", controller.GetMessagesByUserId)
+	router.GET("/messagesByUser/:id", controller.GetMessagesByUserId)
 	router.GET("/message/:id", controller.GetMessageById)
+	router.GET("/messagesByItem/:id", controller.GetMessagesByItemId)
 
 	router.POST("/message/", controller.PostMessage)
 
