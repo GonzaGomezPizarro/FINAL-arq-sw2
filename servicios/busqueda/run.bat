@@ -1,17 +1,15 @@
 @echo off
 
 echo.
-echo ------------------------------------
-echo -     Creando Contenedor MONGO     -
-echo ------------------------------------
+echo -------------------------------
+echo -   Creando Contenedor SOLR   -
+echo -------------------------------
 echo.
 docker-compose up -d
-echo.
-docker ps
 
 echo.
 echo ----------------------------------------
-echo -     ejecutando Servicio ITEMS     -
+echo -     ejecutando Servicio BUSQUEDA     -
 echo ----------------------------------------
 echo.
 go run main.go

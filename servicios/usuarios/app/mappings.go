@@ -1,8 +1,7 @@
 package app
 
 import (
-	// userController "github.com/belenaguilarv/proyectoArqSW/backEnd/controllers/user" -- Linea original
-	controller "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/usuarios/controller" // Puede ser que haga falta agregar / user
+	controller "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/usuarios/controller"
 	log "github.com/sirupsen/logrus"
 )
 

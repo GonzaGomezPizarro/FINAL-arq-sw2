@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  solr:
+    image: solr:8.11.1
+    container_name: solr
+    ports:
+      - "8983:8983"
+    volumes:
+      - ./data:/var/solr/data
+
+  # Agrega otros servicios según sea necesario
+
+volumes:
+  solr_data:
