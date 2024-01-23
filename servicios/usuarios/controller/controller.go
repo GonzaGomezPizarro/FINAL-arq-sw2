@@ -41,7 +41,7 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, usersDto) // esto es lo que no esta andando !!!!!!!!!!!
+	c.JSON(http.StatusOK, usersDto)
 }
 
 func NewUser(c *gin.Context) {
