@@ -60,7 +60,7 @@ func GetMessageById(c *gin.Context) {
 func GetMessagesByItemId(c *gin.Context) {
 	log.Debug("Item id to load: " + c.Param("id"))
 
-	id, _ := c.Param("id")
+	id := c.Param("id")
 	var messagesDto dto.Messages
 
 	messagesDto, err := service.MessageService.GetMessagesByItemId(id)
@@ -93,6 +93,27 @@ func PostMessage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, messageDto)
 }
+func PostMessages(c *gin.Context) {
+	var messagesDto dto.Messages
+	err := c.BindJSON(&messagesDto)
+
+	if err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	createdMessages, errr := service.MessageService.PostMessages(messagesDto)
+
+	if errr != nil {
+		c.JSON(errr.Status(), errr)
+		log.Error(errr.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, createdMessages)
+}
+
 func DeleteMessageById(c *gin.Context) {
 	// Obtener el ID del mensaje a eliminar desde los parámetros de la URL
 	messageIDStr := c.Param("id")
@@ -104,14 +125,14 @@ func DeleteMessageById(c *gin.Context) {
 		return
 	}
 
-	// Llamar al servicio para eliminar el usuario
-	errr := service.MessageService.DeleteMessageById(messageID)
+	// Llamar al servicio para eliminar el mensaje
+	deletedMessage, errr := service.MessageService.DeleteMessageById(messageID)
 	if errr != nil {
 		c.JSON(500, errr)
 		log.Error(errr.Error())
 		return
 	}
 
-	// Si se eliminó el usuario correctamente, devolver una respuesta 204 (sin contenido)
-	c.Status(http.StatusNoContent)
+	// Si se eliminó el mensaje correctamente, devolver el mensaje eliminado como respuesta
+	c.JSON(http.StatusOK, deletedMessage)
 }

@@ -13,64 +13,69 @@ import (
 
 var Db *gorm.DB
 
-func GetUserById(id int) model.User {
-	var user model.User
-	Db.Where("id = ?", id).First(&user)
-	log.Debug("User: ", user)
-	return user
+func GetMessageById(id int) model.Message {
+	var message model.Message
+	Db.Where("id = ?", id).First(&message)
+	log.Debug("Message: ", message)
+	return message
 }
 
-func GetUsers() model.Users {
-	var users model.Users
-	Db.Find(&users)
-	log.Debug("Users: ", users)
-	return users
+func GetMessagesByUserId(userId int) model.Messages {
+	var messages model.Messages
+	Db.Where("user_id = ?", userId).Find(&messages)
+	log.Debug("Messages: ", messages)
+	return messages
 }
 
-func NewUser(user model.User) (model.User, e.ApiError) {
+func GetMessagesByItemId(itemId string) model.Messages {
+	var messages model.Messages
+	Db.Where("item_id = ?", itemId).Find(&messages)
+	log.Debug("Messages: ", messages)
+	return messages
+}
 
-	var existingUser model.User
-	err := Db.Where("username = ?", user.Username).First(&existingUser).Error
-	if err == nil {
-		// El nombre de usuario ya está en uso, devolver un error al cliente
-		return existingUser, e.NewBadRequestApiError("username in use")
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		// Se produjo un error al buscar el usuario en la base de datos
-		return model.User{}, e.NewInternalServerApiError("username cannot be checked", err)
-	}
-	// El nombre de usuario no está en uso, revisemos el mail
-	errr := Db.Where("email = ?", user.Email).First(&existingUser).Error
-	if errr == nil {
-		// El nombre de usuario ya está en uso, devolver un error al cliente
-		return existingUser, e.NewBadRequestApiError("email in use")
-	} else if !errors.Is(errr, gorm.ErrRecordNotFound) {
-		// Se produjo un error al buscar el email en la base de datos
-		return model.User{}, e.NewInternalServerApiError("email cannot be checked", err)
-	}
-	//crear un nuevo registro en la base de datos
-	result := Db.Create(&user)
+func GetMessages() model.Messages {
+	var messages model.Messages
+	Db.Find(&messages)
+	log.Debug("Messages: ", messages)
+	return messages
+}
+
+func NewMessage(message model.Message) (model.Message, e.ApiError) {
+	// Asumiendo que Db está configurado y es accesible
+	result := Db.Create(&message)
+
 	if result.Error != nil {
-		log.Error("Error al crear el usuario:", result.Error)
-		return model.User{}, e.NewInternalServerApiError("user cannot be created", err)
+		log.Error("Error al crear un nuevo mensaje:", result.Error)
+		return model.Message{}, e.NewInternalServerApiError("Error al crear un nuevo mensaje", result.Error)
 	}
-	log.Debug("User Created: ", user)
-	return user, nil
 
+	log.Debug("Nuevo mensaje creado:", message)
+	return message, nil
 }
 
-func DeleteUser(userID int) e.ApiError {
-	var user model.User
-	result := Db.First(&user, userID)
+func DeleteMessage(id int) (model.Message, e.ApiError) {
+	var message model.Message
+
+	// Buscar el mensaje por ID
+	result := Db.First(&message, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return e.NewNotFoundApiError("user not found")
+			return model.Message{}, e.NewNotFoundApiError("Message does not exist")
 		} else {
-			return e.NewInternalServerApiError("error while searching for user", result.Error)
+			return model.Message{}, e.NewInternalServerApiError("Error while searching for message", result.Error)
 		}
 	}
-	result = Db.Delete(&user)
+
+	// Almacenar copia del mensaje para devolverlo después de la eliminación
+	deletedMessage := message
+
+	// Eliminar el mensaje
+	result = Db.Delete(&message)
 	if result.Error != nil {
-		return e.NewInternalServerApiError("error while deleting user", result.Error)
+		return model.Message{}, e.NewInternalServerApiError("Error while deleting message", result.Error)
 	}
-	return nil
+
+	// Devolver el mensaje eliminado
+	return deletedMessage, nil
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/mensajes/dto"
 	e "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/mensajes/errors"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/mensajes/model"
-	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/usuarios/funciones"
 )
 
 type messageService struct{}
@@ -17,8 +16,9 @@ type messageServiceInterface interface {
 	GetMessagesByItemId(id string) (dto.Messages, e.ApiError)
 
 	PostMessage(messageDto dto.Message) (dto.Message, e.ApiError)
+	PostMessages(messages dto.Messages) (dto.Messages, e.ApiError)
 
-	DeleteMessageById(id int) e.ApiError
+	DeleteMessageById(id int) (dto.Message, e.ApiError)
 }
 
 var jwtKey = []byte("secret_key")
@@ -28,10 +28,10 @@ var (
 )
 
 func init() {
-	MessageService = &umessageService{}
+	MessageService = &messageService{}
 }
 
-func (s *messageService) GetMessageById(id int) (dto.Message, e.apiError) {
+func (s *messageService) GetMessageById(id int) (dto.Message, e.ApiError) {
 	var message model.Message = cliente.GetMessageById(id)
 	var messageDto dto.Message
 
@@ -47,8 +47,8 @@ func (s *messageService) GetMessageById(id int) (dto.Message, e.apiError) {
 	return messageDto, nil
 }
 
-func (s *messageService) GetMessages() (dto.Messages, error) {
-	var messages model.Message = cliente.GetMessages()
+func (s *messageService) GetMessages() (dto.Messages, e.ApiError) {
+	var messages model.Messages = cliente.GetMessages()
 	var messagesDto dto.Messages
 
 	for _, message := range messages {
@@ -90,25 +90,6 @@ func (s *messageService) GetMessagesByItemId(id string) (dto.Messages, e.ApiErro
 	return messagesDto, nil
 }
 
-func (s *userService) NewUser(userDto dto.User) (dto.User, e.ApiError) {
-	var user model.User
-
-	user.Username = userDto.Username
-	user.Email = userDto.Email
-	user.Password = funciones.SSHA256(userDto.Password)
-	user.FirstName = userDto.FirstName
-	user.LastName = userDto.LastName
-
-	var err e.ApiError
-	user, err = cliente.NewUser(user)
-
-	userDto.Password = user.Password
-	userDto.Id = user.Id
-
-	return userDto, err
-
-}
-
 func (s *messageService) PostMessage(messageDto dto.Message) (dto.Message, e.ApiError) {
 	var message model.Message
 
@@ -119,27 +100,47 @@ func (s *messageService) PostMessage(messageDto dto.Message) (dto.Message, e.Api
 	var err e.ApiError
 	message, err = cliente.NewMessage(message)
 
-	messageDto.id = message.Id
+	messageDto.Id = message.Id
 
 	return messageDto, err
 }
 
-func (s *userService) DeleteUser(id int) e.ApiError {
-	err := cliente.DeleteUser(id)
+func (s *messageService) PostMessages(messages dto.Messages) (dto.Messages, e.ApiError) {
+	var MessagesDto dto.Messages
 
-	if err != nil {
-		return err
+	for _, messageDto := range messages {
+		var message model.Message
+
+		message.Content = messageDto.Content
+		message.ItemId = messageDto.ItemId
+		message.ReceiverId = messageDto.ReceiverId
+
+		message, err := cliente.NewMessage(message)
+
+		if err != nil {
+			return nil, err
+		}
+
+		messageDto.Id = message.Id
+
+		MessagesDto = append(MessagesDto, messageDto)
 	}
 
-	return nil
+	return MessagesDto, nil
 }
 
-func (s *messageService) DeleteMessageById(id int) e.ApiError {
-	err := cliente.DeleteMessageById(id)
+func (s *messageService) DeleteMessageById(id int) (dto.Message, e.ApiError) {
+	deletedMessage, err := cliente.DeleteMessage(id)
 
 	if err != nil {
-		return err
+		return dto.Message{}, err
 	}
 
-	return nil
+	var message dto.Message
+	message.Content = deletedMessage.Content
+	message.Id = deletedMessage.Id
+	message.ItemId = deletedMessage.ItemId
+	message.ReceiverId = deletedMessage.ReceiverId
+
+	return message, nil
 }
