@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/cache"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/database"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/model"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,6 +15,13 @@ import (
 )
 
 func GetItemById(id string) (model.Item, error) {
+	// Intenta obtener el objeto de Memcached
+	cachedItem, err := GetItemFromCache(id)
+	if err == nil {
+		return cachedItem, nil
+	}
+
+	// Si no se encuentra en Memcached, busca en la base de datos
 	db := database.StartDBEngine()
 
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -28,10 +36,16 @@ func GetItemById(id string) (model.Item, error) {
 		return model.Item{}, errors.New("Item not found")
 	}
 
+	// Almacena el objeto en Memcached solo si se encontró en la base de datos
+	cachedItem, errr := InsertItemToCache(item, item.Id.Hex())
+	if errr != nil {
+		log.Println(errr)
+	}
+	log.Println("encontrado en base de datos pero no en cache")
 	return item, nil
 }
 
-func GetItems() (model.Items, error) {
+func GetItems() (model.Items, error) { // voy directo a base de datos por que trae todos los items de la base de datos
 	db := database.StartDBEngine()
 
 	var items model.Items
@@ -61,6 +75,7 @@ func GetItems() (model.Items, error) {
 }
 
 func NewItem(item model.Item) (model.Item, e.ApiError) {
+	// Insertar el ítem en la base de datos
 	db := database.StartDBEngine()
 	collection := db.Collection("items")
 
@@ -68,9 +83,17 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 	if err != nil {
 		return model.Item{}, e.NewInternalServerApiError("Error al crear el item", err)
 	}
+	log.Println("insertado en BD")
 
+	// Obtener el ID insertado y asignarlo al ítem
 	objectID := res.InsertedID.(primitive.ObjectID)
 	item.Id = objectID
+
+	// Guardar el ítem en la caché
+	_, err = InsertItemToCache(item, item.Id.Hex())
+	if err != nil {
+		log.Println("Error al almacenar en caché:", err)
+	}
 
 	return item, nil
 }
@@ -89,6 +112,8 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 		return nil, e.NewApiError("Error al insertar los items", err.Error(), 500, e.CauseList{})
 	}
 
+	log.Println("items almacenados en BD")
+
 	// Obtiene los IDs asignados por MongoDB a los nuevos items
 	objectIds := result.InsertedIDs
 	if len(objectIds) != len(items) {
@@ -100,6 +125,14 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 			return nil, e.NewInternalServerApiError("Error al obtener los IDs de los items insertados", nil)
 		}
 		items[i].Id = id
+	}
+
+	// Guarda los primeros 50 items en la caché
+	for i := 0; i < 50 && i < len(items); i++ {
+		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
+		if err != nil {
+			log.Println("Error al almacenar en la caché:", err)
+		}
 	}
 
 	return items, nil
@@ -120,5 +153,54 @@ func DeleteItem(itemId string) e.ApiError {
 		return e.NewInternalServerApiError("Error al eliminar el item", err)
 	}
 
+	log.Println("item deleted from DB", objectId)
+
+	// Borrar el item de la caché
+	err = cache.DeleteFromCache("item:" + itemId)
+	if err != nil {
+		log.Println("Error al borrar de la caché:", err)
+	} else {
+		log.Println("item deleted from cache", objectId)
+	}
+
 	return nil
+}
+
+func InsertItemToCache(item model.Item, id string) (model.Item, error) {
+	// Almacena el objeto en Memcached
+	bsonItem, err := bson.Marshal(item)
+	if err != nil {
+		log.Println("Error marshaling item to BSON:", err)
+		return model.Item{}, errors.New("Error marshaling item to BSON")
+	}
+
+	err = cache.SetToCache("item:"+id, string(bsonItem))
+	if err != nil {
+		log.Println("Error almacenando en Memcached:", err)
+		return model.Item{}, errors.New("Error almacenando en Memcached")
+	}
+
+	log.Println("Item almacenado en cache")
+
+	// Devuelve el item
+	return item, nil
+}
+
+func GetItemFromCache(id string) (model.Item, error) {
+	// Intenta obtener el objeto de Memcached
+	cachedItem, err := cache.GetFromCache("item:" + id)
+	if err != nil {
+		return model.Item{}, errors.New("Item not found in cache")
+	}
+
+	// Decodifica el objeto BSON
+	var item model.Item
+	err = bson.Unmarshal([]byte(cachedItem), &item)
+	if err != nil {
+		log.Println("Error decoding cached item:", err)
+		return model.Item{}, errors.New("Error decoding cached item")
+	}
+
+	log.Println("Item encontrado en cache")
+	return item, nil
 }

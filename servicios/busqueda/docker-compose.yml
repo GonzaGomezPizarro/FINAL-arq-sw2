@@ -9,7 +9,5 @@ services:
     volumes:
       - ./data:/var/solr/data
 
-  # Agrega otros servicios según sea necesario
-
 volumes:
   solr_data:
