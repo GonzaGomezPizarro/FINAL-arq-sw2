@@ -99,7 +99,7 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 	item.Id = objectID
 
 	//notificamos que se modifico un nuevo item
-	id := item.Id.String()
+	id := item.Id.Hex()
 	notificacion.Send(id)
 
 	// Guardar el ítem en la caché
@@ -142,7 +142,7 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 
 	for i := 0; i < len(items); i++ {
 		//notificamos que se modifico cada item
-		id := items[i].Id.String()
+		id := items[i].Id.Hex()
 		notificacion.Send(id)
 	}
 
