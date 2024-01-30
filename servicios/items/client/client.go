@@ -8,6 +8,7 @@ import (
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/cache"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/database"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/model"
+	notificacion "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/notificaciones"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -71,6 +72,14 @@ func GetItems() (model.Items, error) { // voy directo a base de datos por que tr
 		return items, errors.New("Error fetching items")
 	}
 
+	// Guarda los primeros 50 items en la caché
+	for i := 0; i < 50 && i < len(items); i++ {
+		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
+		if err != nil {
+			log.Println("Error al almacenar en la caché:", err)
+		}
+	}
+
 	return items, nil
 }
 
@@ -88,6 +97,10 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 	// Obtener el ID insertado y asignarlo al ítem
 	objectID := res.InsertedID.(primitive.ObjectID)
 	item.Id = objectID
+
+	//notificamos que se modifico un nuevo item
+	id := item.Id.String()
+	notificacion.Send(id)
 
 	// Guardar el ítem en la caché
 	_, err = InsertItemToCache(item, item.Id.Hex())
@@ -127,6 +140,12 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 		items[i].Id = id
 	}
 
+	for i := 0; i < len(items); i++ {
+		//notificamos que se modifico cada item
+		id := items[i].Id.String()
+		notificacion.Send(id)
+	}
+
 	// Guarda los primeros 50 items en la caché
 	for i := 0; i < 50 && i < len(items); i++ {
 		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
@@ -154,6 +173,9 @@ func DeleteItem(itemId string) e.ApiError {
 	}
 
 	log.Println("item deleted from DB", objectId)
+
+	//notificamos que se modifico un nuevo item
+	notificacion.Send(itemId)
 
 	// Borrar el item de la caché
 	err = cache.DeleteFromCache("item:" + itemId)
