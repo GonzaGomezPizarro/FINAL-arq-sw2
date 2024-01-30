@@ -1,10 +1,11 @@
 @echo off
 
 echo.
-echo ---------------------------------------
-echo -     Creando Contenedor RABBITMQ     -
-echo ---------------------------------------
+echo ----------------------------------------
+echo -     Corriendo contenedor RABBITMQ    -
+echo ----------------------------------------
 echo.
 docker-compose up -d
-echo.
-docker ps
+
+echo  Presione una tecla para finalizar...
+pause>nul
