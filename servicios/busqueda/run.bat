@@ -1,9 +1,9 @@
 @echo off
 
 echo.
-echo -------------------------------
-echo -   Creando Contenedor SOLR   -
-echo -------------------------------
+echo ----------------------------------------
+echo -   Creando Contenedor ELASTICSEARCH   -
+echo ----------------------------------------
 echo.
 docker-compose up -d
 

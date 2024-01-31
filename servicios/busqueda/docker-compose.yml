@@ -1,13 +1,10 @@
 version: '3'
 
 services:
-  solr:
-    image: solr:8.11.1
-    container_name: solr
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
     ports:
-      - "8983:8983"
-    volumes:
-      - ./data:/var/solr/data
-
-volumes:
-  solr_data:
+      - "9200:9200"
