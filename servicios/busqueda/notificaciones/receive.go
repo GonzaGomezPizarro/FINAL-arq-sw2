@@ -1,7 +1,9 @@
 package notificacion
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/motordebusqueda"
 	rabbit "github.com/rabbitmq/amqp091-go"
@@ -47,14 +49,36 @@ func Receive(messages chan<- string) {
 	for d := range msgs {
 		id := string(d.Body)
 		log.Printf("Received a message: %s", d.Body)
+
 		// Realizar acciones adicionales según el contenido del mensaje
 		if id != "" {
-			err := motordebusqueda.Actualizar(id)
+			// Esperar 50ms antes de ejecutar Actualizar
+			time.Sleep(100 * time.Millisecond)
+
+			// Intentar actualizar y manejar el error
+			err := actualizarConRetry(id)
 			if err != nil {
-				log.Println(err.Error())
+				log.Printf("No se pudo corregir el ítem: %s", err.Error())
+				// Continuar con el siguiente mensaje
+				continue
 			}
 		}
 		messages <- string(d.Body)
 		// Agregar más lógica aquí según lo que desees hacer con el mensaje recibido
 	}
+}
+
+// Función para intentar actualizar con retry
+func actualizarConRetry(id string) error {
+	// Intentar actualizar hasta 3 veces con un intervalo de 1 segundo entre intentos
+	for i := 0; i < 3; i++ {
+		err := motordebusqueda.Actualizar(id)
+		if err == nil {
+			// Actualización exitosa
+			return nil
+		}
+		log.Printf("Error al actualizar el ítem en Elasticsearch (intentando nuevamente): %s", err.Error())
+		time.Sleep(1 * time.Second)
+	}
+	return fmt.Errorf("Error al actualizar el ítem en Elasticsearch después de varios intentos")
 }

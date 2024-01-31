@@ -7,7 +7,16 @@ import (
 )
 
 func main() {
-	motordebusqueda.Indexall()
+	errr := motordebusqueda.StartSearchEngine() // iniciamos la conexcion con elasticsearch
+	if errr != nil {
+		panic(errr)
+	}
+
+	// indexamos la base de datos
+	err := motordebusqueda.IndexAll()
+	if err != nil {
+		panic(err)
+	}
 
 	// Iniciar la escucha de mensajes en una goroutine
 	messages := make(chan string)
