@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/app"
-	elasticsearch "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/elasticsearch"
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/elasticsearch"
 	notificacion "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/notificaciones"
 )
 
