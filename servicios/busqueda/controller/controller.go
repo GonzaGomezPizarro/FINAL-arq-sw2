@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
-	elasticsearch "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/elasticsearch"
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/motordebusqueda"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +12,7 @@ func GetQuery(c *gin.Context) {
 	var itemsDto dto.Items
 	query := c.Param("searchQuery")
 
-	itemsDto, err := elasticsearch.GetQuery(query)
+	itemsDto, err := motordebusqueda.GetQuery(query)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, itemsDto)
 		return
@@ -25,7 +25,7 @@ func GetQuery(c *gin.Context) {
 func GetAll(c *gin.Context) {
 	var itemsDto dto.Items
 
-	itemsDto, err := elasticsearch.GetAll()
+	itemsDto, err := motordebusqueda.GetAll()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, itemsDto)
 		return
@@ -37,7 +37,7 @@ func GetAll(c *gin.Context) {
 
 func GetItemById(c *gin.Context) {
 	id := c.Param("id")
-	item, err := elasticsearch.GetItemById(id)
+	item, err := motordebusqueda.GetItemById(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return

@@ -1,15 +1,17 @@
-package elasticsearch
+package motordebusqueda
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"encoding/json" 
+	"strings"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
 	"github.com/elastic/go-elasticsearch/v8"
+
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
@@ -81,7 +83,7 @@ func Actualizar(id string) error {
 	}
 
 	// Actualizar el ítem en Elasticsearch
-	err = actualizarItemEnElasticsearch(itemJSON)
+	err = ActualizarItemEnElasticsearch(itemJSON)
 	if err != nil {
 		return err
 	}
@@ -118,22 +120,22 @@ func ActualizarItemEnElasticsearch(itemJSON []byte) error {
 
 	// Decodificar el JSON del ítem
 	var item map[string]interface{}
-	if err := json.Umarshal(itemJSON, &item); err != nil {
+	if err := json.Unmarshal(itemJSON, &item); err != nil {
 		return err
 	}
 
 	// Obtener el ID del ítem
 	id, ok := item["id"].(string)
 	if !ok {
-		return fmt.Errrf("No se pudo obtener el ID del ítem")
+		return fmt.Errorf("No se pudo obtener el ID del ítem")
 	}
 
-	// Preparar la solicitd de índice
-	req := elasticsearch.IndexRequest{
-		Index:      "tu-indice", // Ajustar segúntu índice
+	// Preparar la solicitud de actualización
+	req := esapi.UpdateRequest{
+		Index:      "tu-indice", // Ajustar según tu índice
 		DocumentID: id,          // Utilizar el ID como Document ID
-		Body:       bytes.NewReader(itemJSON),
-		efresh:     "true",
+		Body:       strings.NewReader(fmt.Sprintf(`{"doc": %s}`, itemJSON)),
+		Refresh:    "true",
 	}
 
 	// Enviar la solicitud a Elasticsearch
@@ -145,11 +147,10 @@ func ActualizarItemEnElasticsearch(itemJSON []byte) error {
 
 	// Verificar la respuesta de Elasticsearch
 	if res.IsError() {
-		return fmt.Errorf("Error al actulizar el ítem en Elasticsearch: %s", res.String())
+		return fmt.Errorf("Error al actualizar el ítem en Elasticsearch: %s", res.String())
 	}
 
 	return nil
-
 }
 
 // GetQuery realiza una búsqueda en Solr con laconsulta especificada

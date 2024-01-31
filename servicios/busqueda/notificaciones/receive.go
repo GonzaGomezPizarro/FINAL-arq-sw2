@@ -3,13 +3,13 @@ package notificacion
 import (
 	"log"
 
-	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/elasticsearch"
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/motordebusqueda"
 	rabbit "github.com/rabbitmq/amqp091-go"
 )
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Panicf("%s: %s", msg, err)
+		log.Println(msg, err)
 	}
 }
 
@@ -49,7 +49,7 @@ func Receive(messages chan<- string) {
 		log.Printf("Received a message: %s", d.Body)
 		// Realizar acciones adicionales según el contenido del mensaje
 		if id != "" {
-			err := elasticsearch.Actualizar(id)
+			err := motordebusqueda.Actualizar(id)
 			if err != nil {
 				log.Println(err.Error())
 			}
