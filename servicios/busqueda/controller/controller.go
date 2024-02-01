@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 
 	cliente "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/client"
@@ -15,6 +16,7 @@ func GetQuery(c *gin.Context) {
 	itemsDto, err := cliente.GetQuery(query)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, itemsDto)
+		log.Printf(err.Error())
 		return
 	}
 
@@ -28,6 +30,7 @@ func GetAll(c *gin.Context) {
 	itemsDto, err := cliente.GetAll()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, itemsDto)
+		log.Printf(err.Error())
 		return
 	}
 
@@ -40,6 +43,7 @@ func GetItemById(c *gin.Context) {
 	item, err := cliente.GetItemById(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		log.Printf(err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, item)

@@ -9,7 +9,7 @@ func mapUrls() {
 	// Products Mapping
 	router.GET("/search/:searchQuery", controller.GetQuery)
 	router.GET("/searchAll", controller.GetAll)
-	router.GET("/items/:id", controller.GetItemById)
+	router.GET("/item/:id", controller.GetItemById)
 
 	log.Info("Finishing mappings configurations")
 }

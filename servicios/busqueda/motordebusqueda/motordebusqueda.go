@@ -30,5 +30,6 @@ func StartSearchEngine() error {
 		return fmt.Errorf("Error al crear el cliente de Elasticsearch: %s", err)
 	}
 
+	fmt.Println("Conexión a Elasticsearch establecida correctamente.")
 	return nil
 }
