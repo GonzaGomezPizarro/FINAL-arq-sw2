@@ -2,15 +2,12 @@ package motordebusqueda
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
 // IndexAll obtiene todos los items del servicio de items y los indexa en Elasticsearch
@@ -56,39 +53,60 @@ func indexDocument(id string, item dto.Item) error {
 		return err
 	}
 
-	req := esapi.IndexRequest{
-		Index:      IndexName,
-		DocumentID: id,
-		Body:       bytes.NewReader(itemJSON),
-		Refresh:    "true",
-	}
+	// Construir la URL para la indexación
+	url := fmt.Sprintf("%s/%s/_doc/%s", URL, IndexName, id)
 
-	res, err := req.Do(context.Background(), ElasticSearch)
+	// Realizar la solicitud HTTP POST para indexar el documento
+	resp, err := http.Post(url, "application/json", bytes.NewReader(itemJSON))
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
-	if res.IsError() {
-		return fmt.Errorf("Error al indexar el documento: %s", res.String())
+	// Leer la respuesta
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// Verificar si la respuesta indica un error
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("Error al indexar el documento. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
 }
 
 //----------------------------------------------------------------
-// Actualizar busca en la base de datos el item y lo actualiza en la colección de Elasticsearch.
-func Actualizar(id string) error {
+// Revisar busca en la base de datos el item y lo elimina o lo agrega en la colección de Elasticsearch.
+// Los items en la base de datos solo pueden ser creados o borrados, no se pueden modificar campos...
+func Revisar(id string) error {
 	// Obtener información del ítem desde el servicio de items
 	itemJSON, err := obtenerJSONItem(id)
 	if err != nil {
 		return err
 	}
 
-	// Actualizar el ítem en Elasticsearch
-	err = ActualizarItemEnElasticsearch(itemJSON)
-	if err != nil {
-		return err
+	if itemJSON == nil {
+		// El item no se encuentra en la base de datos
+		println()
+		errr := deleteDocument(id)
+		if errr != nil {
+			return errr
+		}
+	} else {
+		// Convertir el JSON a una estructura dto.Item
+		var itemDto dto.Item
+		err := json.Unmarshal(itemJSON, &itemDto)
+		if err != nil {
+			return err
+		}
+
+		// Indexar o actualizar el ítem en Elasticsearch
+		err = indexDocument(id, itemDto)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -96,52 +114,59 @@ func Actualizar(id string) error {
 
 // obtenerJSONItem realiza una solicitud HTTP GET al servicio de items para obtener el JSON del ítem.
 func obtenerJSONItem(id string) ([]byte, error) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:8091/item/%s", id))
+	// Construir la URL para obtener el JSON del ítem
+	url := "http://localhost:8091/item/" + id
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	// Leer la respuesta
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return body, nil
+	// Verificar el código de estado de la respuesta
+	if resp.StatusCode == http.StatusNotFound {
+		// El item no se encuentra en la base de datos
+		return nil, nil
+	} else if resp.StatusCode == http.StatusOK {
+		// Se encontró el item, devolvemos el JSON del ítem
+		return body, nil
+	}
+
+	return nil, fmt.Errorf("Error al obtener el JSON del ítem. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
 }
 
-// ActualizarItemEnElasticsearch actualiza el ítem en Elasticsearch.
-func ActualizarItemEnElasticsearch(itemJSON []byte) error {
-	// Decodificar el JSON del ítem
-	var item map[string]interface{}
-	if err := json.Unmarshal(itemJSON, &item); err != nil {
-		return err
-	}
+func deleteDocument(id string) error {
+	// Construir la URL para eliminar el documento
+	url := fmt.Sprintf("%s/%s/_doc/%s", URL, IndexName, id)
 
-	// Obtener el ID del ítem
-	id, ok := item["id"].(string)
-	if !ok {
-		return fmt.Errorf("No se pudo obtener el ID del ítem")
-	}
-
-	// Preparar la solicitud de actualización
-	req := esapi.UpdateRequest{
-		Index:      IndexName,
-		DocumentID: id,
-		Body:       strings.NewReader(fmt.Sprintf(`{"doc": %s}`, itemJSON)),
-		Refresh:    "true",
-	}
-
-	// Enviar la solicitud a Elasticsearch usando la conexión global
-	res, err := req.Do(context.Background(), ElasticSearch)
+	// Realizar la solicitud HTTP DELETE para eliminar el documento
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	// Verificar la respuesta de Elasticsearch
-	if res.IsError() {
-		return fmt.Errorf("Error al actualizar el ítem en Elasticsearch: %s", res.String())
+	// Realizar la solicitud HTTP DELETE
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Leer la respuesta
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// Verificar si la respuesta indica un error
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("Error al eliminar el documento. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
 	}
 
 	return nil

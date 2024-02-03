@@ -8,7 +8,6 @@ import (
 	"net/url"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
-	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/motordebusqueda"
 )
 
 // GetQuery realiza una búsqueda en Elasticsearch con la consulta especificada
@@ -87,29 +86,6 @@ func GetAll() (dto.Items, error) {
 
 // GetItemById obtiene el documento que coincide con el ID dado del índice IndexName
 func GetItemById(id string) (dto.Item, error) {
-	// Realiza una solicitud de Elasticsearch para obtener el documento por ID
-	res, err := motordebusqueda.ElasticSearch.Get(motordebusqueda.IndexName, id)
-	if err != nil {
-		return dto.Item{}, fmt.Errorf("Error en la solicitud de Elasticsearch: %v", err)
-	}
-	defer res.Body.Close()
 
-	if res.IsError() {
-		body, _ := ioutil.ReadAll(res.Body)
-		return dto.Item{}, fmt.Errorf("Error en la respuesta de Elasticsearch (código %d): %s", res.StatusCode, body)
-	}
-
-	// Lee el cuerpo de la respuesta
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return dto.Item{}, fmt.Errorf("Error al leer el cuerpo de la respuesta: %v", err)
-	}
-
-	// Decodifica el cuerpo JSON en la estructura dto.Item
-	var item dto.Item
-	if err := json.Unmarshal(body, &item); err != nil {
-		return dto.Item{}, fmt.Errorf("Error al decodificar la respuesta JSON: %v", err)
-	}
-
-	return item, nil
+	return dto.Item{}, nil
 }

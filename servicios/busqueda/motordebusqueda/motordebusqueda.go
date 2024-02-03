@@ -2,34 +2,48 @@ package motordebusqueda
 
 import (
 	"fmt"
-
-	"github.com/elastic/go-elasticsearch/v8"
+	"log"
+	"net/http"
+	"strconv"
 )
 
-const IndexName = "items"
-
-var ElasticSearch *elasticsearch.Client
+const (
+	IndexName = "items"
+	URL       = "http://localhost:9200"
+)
 
 func init() {
 	// Inicia la conexión con Elasticsearch
-	if err := StartSearchEngine(); err != nil {
+	if err := Check(); err != nil {
 		fmt.Printf("Error al iniciar el motor de búsqueda: %s\n", err)
 	}
+
 }
 
 // StartSearchEngine inicia la conexión con Elasticsearch
-func StartSearchEngine() error {
-	// Configurar la conexión a Elasticsearch
-	cfg := elasticsearch.Config{
-		Addresses: []string{"http://localhost:9200"},
-	}
+func Check() error {
 
-	var err error
-	ElasticSearch, err = elasticsearch.NewClient(cfg)
+	err := checkConection()
 	if err != nil {
-		return fmt.Errorf("Error al crear el cliente de Elasticsearch: %s", err)
+		log.Println(" -> No se pudo establecer conexion con el motor de búsqueda")
+		return err
 	}
 
-	fmt.Println("Conexión a Elasticsearch establecida correctamente.")
+	fmt.Println("Elasticsearch healthy.")
 	return nil
+}
+
+func checkConection() error {
+	resp, err := http.Get(URL)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode == 200 {
+		return nil
+	}
+
+	var er error
+	er = fmt.Errorf(strconv.Itoa(resp.StatusCode))
+	return er
 }

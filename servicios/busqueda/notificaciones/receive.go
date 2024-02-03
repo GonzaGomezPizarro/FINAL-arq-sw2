@@ -61,6 +61,8 @@ func Receive(messages chan<- string) {
 				log.Printf("No se pudo corregir el ítem: %s", err.Error())
 				// Continuar con el siguiente mensaje
 				continue
+			} else {
+				log.Println(" - > Item actualizado")
 			}
 		}
 		messages <- string(d.Body)
@@ -72,7 +74,7 @@ func Receive(messages chan<- string) {
 func actualizarConRetry(id string) error {
 	// Intentar actualizar hasta 3 veces con un intervalo de 1 segundo entre intentos
 	for i := 0; i < 3; i++ {
-		err := motordebusqueda.Actualizar(id)
+		err := motordebusqueda.Revisar(id)
 		if err == nil {
 			// Actualización exitosa
 			return nil

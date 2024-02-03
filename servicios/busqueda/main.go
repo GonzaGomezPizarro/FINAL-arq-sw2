@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	errr := motordebusqueda.StartSearchEngine() // iniciamos la conexcion con elasticsearch
+	errr := motordebusqueda.Check() // iniciamos la conexcion con elasticsearch
 	if errr != nil {
 		panic(errr)
 	}
