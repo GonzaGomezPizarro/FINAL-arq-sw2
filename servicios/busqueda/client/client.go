@@ -14,7 +14,7 @@ import (
 func GetQuery(query string) (dto.Items, error) {
 	// Construye la URL de la consulta
 	encodedQuery := url.QueryEscape(query)
-	queryURL := fmt.Sprintf("http://localhost:9200/items/_search?q=%s", encodedQuery)
+	queryURL := fmt.Sprintf("http://localhost:9200/items/_search?q=%s*", encodedQuery)
 
 	// Realiza una solicitud HTTP GET directa a la API de Elasticsearch con la consulta
 	resp, err := http.Get(queryURL)
@@ -86,6 +86,31 @@ func GetAll() (dto.Items, error) {
 
 // GetItemById obtiene el documento que coincide con el ID dado del índice IndexName
 func GetItemById(id string) (dto.Item, error) {
+	url := "http://localhost:9200/items/_doc/" + id
 
-	return dto.Item{}, nil
+	resp, err := http.Get(url)
+	if err != nil {
+		return dto.Item{}, fmt.Errorf("Error al realizar la solicitud HTTP a Elasticsearch: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verifica el código de respuesta
+	if resp.StatusCode != http.StatusOK {
+		return dto.Item{}, fmt.Errorf("Error al obtener el documento de Elasticsearch. Código de estado: %d", resp.StatusCode)
+	}
+
+	// Lee el cuerpo de la respuesta
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return dto.Item{}, fmt.Errorf("Error al leer el cuerpo de la respuesta: %v", err)
+	}
+
+	// Decodifica el cuerpo JSON en la estructura RespuestaCompletaElasticsearch
+	var respuestaCompleta dto.RespuestaCompletaElasticsearch
+	if err := json.Unmarshal(body, &respuestaCompleta); err != nil {
+		return dto.Item{}, fmt.Errorf("Error al decodificar la respuesta JSON: %v", err)
+	}
+
+	// Devuelve directamente el campo Source de RespuestaCompletaElasticsearch
+	return respuestaCompleta.Source, nil
 }

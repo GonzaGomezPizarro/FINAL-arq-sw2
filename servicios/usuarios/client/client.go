@@ -74,3 +74,27 @@ func DeleteUser(userID int) e.ApiError {
 	}
 	return nil
 }
+
+func Login(credenciales model.Credenciales) (model.User, e.ApiError) {
+	var user model.User
+
+	// Buscar el usuario por nombre de usuario en la base de datos
+	err := Db.Where("username = ?", credenciales.Username).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Usuario no encontrado
+			return model.User{}, e.NewUnauthorizedApiError("Credenciales inválidas")
+		}
+		// Error interno al buscar el usuario
+		return model.User{}, e.NewInternalServerApiError("Error while searching for user", err)
+	}
+
+	// Verificar la contraseña
+	if credenciales.Password != user.Password {
+		// Contraseña no válida
+		return model.User{}, e.NewUnauthorizedApiError("Credenciales inválidas")
+	}
+
+	// Autenticación exitosa
+	return user, nil
+}

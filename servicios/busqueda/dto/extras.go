@@ -21,3 +21,15 @@ type Total struct {
 type Hit struct {
 	Source Item `json:"_source"`
 }
+
+// RespuestaCompletaElasticsearch representa la estructura completa de la respuesta de Elasticsearch
+type RespuestaCompletaElasticsearch struct {
+	Index       string `json:"_index"`
+	Type        string `json:"_type"`
+	ID          string `json:"_id"`
+	Version     int    `json:"_version"`
+	SeqNo       int    `json:"_seq_no"`
+	PrimaryTerm int    `json:"_primary_term"`
+	Found       bool   `json:"found"`
+	Source      Item   `json:"_source"`
+}

@@ -15,6 +15,7 @@ type userServiceInterface interface {
 	GetUsers() (dto.Users, e.ApiError)
 	NewUser(userDto dto.User) (dto.User, e.ApiError)
 	DeleteUser(id int) e.ApiError
+	Authenticate(credenciales dto.Credenciales) (dto.User, e.ApiError)
 }
 
 var jwtKey = []byte("secret_key")
@@ -92,4 +93,26 @@ func (s *userService) DeleteUser(id int) e.ApiError {
 	}
 
 	return nil
+}
+
+func (s *userService) Authenticate(credenciales dto.Credenciales) (dto.User, e.ApiError) {
+	var credencialesModel model.Credenciales
+	credencialesModel.Password = funciones.SSHA256(credenciales.Password)
+	credencialesModel.Username = credenciales.Username
+
+	user, err := cliente.Login(credencialesModel)
+	if err != nil {
+		return dto.User{}, e.NewUnauthorizedApiError("Credenciales inválidas")
+	}
+	var userDto dto.User
+
+	userDto.Email = user.Email
+	userDto.Password = user.Password
+	userDto.Username = user.Username
+	userDto.FirstName = user.FirstName
+	userDto.LastName = user.LastName
+	userDto.Id = user.Id
+
+	// Autenticación exitosa
+	return userDto, nil
 }

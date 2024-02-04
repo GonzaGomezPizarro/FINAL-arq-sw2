@@ -10,6 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	log "github.com/sirupsen/logrus"
+
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 var jwtKey = []byte("secret_key")
@@ -86,4 +90,49 @@ func DeleteUser(c *gin.Context) {
 
 	// Si se eliminó el usuario correctamente, devolver una respuesta 204 (sin contenido)
 	c.Status(http.StatusNoContent)
+}
+
+// Login function
+func Login(c *gin.Context) {
+	var credentials dto.Credenciales
+	err := c.BindJSON(&credentials)
+
+	if err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// Check username and password (replace with your authentication logic)
+	user, err := service.UserService.Authenticate(credentials)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	// Create JWT token
+	expirationTime := time.Now().Add(24 * time.Hour) // Change the expiration time as needed
+	claims := &Claims{
+		Username: user.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating token"})
+		return
+	}
+
+	// Return the token to the client
+	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+}
+
+// Structure for JWT Claims
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
 }

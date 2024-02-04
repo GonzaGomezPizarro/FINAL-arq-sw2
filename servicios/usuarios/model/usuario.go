@@ -11,3 +11,8 @@ type User struct {
 }
 
 type Users []User
+
+type Credenciales struct {
+	Username string
+	Password string
+}

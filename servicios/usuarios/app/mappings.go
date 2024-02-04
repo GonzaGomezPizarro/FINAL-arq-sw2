@@ -11,6 +11,7 @@ func mapUrls() {
 	router.POST("/user", controller.NewUser)
 	router.GET("/user/:id", controller.GetUserById)
 	router.DELETE("/user/:id", controller.DeleteUser)
+	router.POST("/login", controller.Login)
 
 	log.Info("Finishing mappings configurations")
 }
