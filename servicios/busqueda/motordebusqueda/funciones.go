@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
@@ -18,11 +19,21 @@ func IndexAll() error {
 		return err
 	}
 
+	if items == nil {
+		log.Println("-> Base de datos vacia")
+		return nil
+	}
+
 	// Indexar los items en Elasticsearch
 	for _, item := range items {
 		id := item.Id
-		indexDocument(id, item)
+		err := indexDocument(id, item)
+		if err != nil {
+			return err
+		}
 	}
+
+	log.Println("-> Items indexados")
 
 	return nil
 }
@@ -34,6 +45,10 @@ func getAllItemsFromService() (dto.Items, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.Body == nil {
+		return nil, nil
+	}
 
 	var items dto.Items
 

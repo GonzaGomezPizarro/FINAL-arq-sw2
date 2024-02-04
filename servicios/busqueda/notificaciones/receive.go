@@ -15,7 +15,7 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func Receive(messages chan<- string) {
+func Receive() {
 	conn, err := rabbit.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -44,6 +44,7 @@ func Receive(messages chan<- string) {
 		nil,    // args
 	)
 	failOnError(err, "Failed to register a consumer")
+	log.Println(" -> Escuchando mensajes... ")
 
 	// Consumir mensajes continuamente
 	for d := range msgs {
@@ -52,8 +53,8 @@ func Receive(messages chan<- string) {
 
 		// Realizar acciones adicionales según el contenido del mensaje
 		if id != "" {
-			// Esperar 50ms antes de ejecutar Actualizar
-			time.Sleep(100 * time.Millisecond)
+			// Esperar 200ms antes de ejecutar Actualizar
+			time.Sleep(200 * time.Millisecond)
 
 			// Intentar actualizar y manejar el error
 			err := actualizarConRetry(id)
@@ -65,8 +66,7 @@ func Receive(messages chan<- string) {
 				log.Println(" - > Item actualizado")
 			}
 		}
-		messages <- string(d.Body)
-		// Agregar más lógica aquí según lo que desees hacer con el mensaje recibido
+		log.Println(" -> Escuchando mensajes... ")
 	}
 }
 

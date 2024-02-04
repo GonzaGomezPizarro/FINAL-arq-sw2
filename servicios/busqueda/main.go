@@ -20,11 +20,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("-> Items indexados")
 
 	// Iniciar la escucha de mensajes en una goroutine
-	messages := make(chan string)
-	go notificacion.Receive(messages)
+	go notificacion.Receive()
 
 	app.StartRoute()
 }
