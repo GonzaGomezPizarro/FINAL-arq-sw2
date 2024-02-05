@@ -1,0 +1,11 @@
+body.centrado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Ajusta la altura al 100% del viewport */
+}
+
+button{
+    margin: 5%; /* Ajusta el valor según sea necesario para lograr el espacio deseado */
+}

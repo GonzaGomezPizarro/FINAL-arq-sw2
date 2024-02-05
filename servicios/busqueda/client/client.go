@@ -114,3 +114,57 @@ func GetItemById(id string) (dto.Item, error) {
 	// Devuelve directamente el campo Source de RespuestaCompletaElasticsearch
 	return respuestaCompleta.Source, nil
 }
+
+func GetItemByUserId(userId int) (dto.Items, error) {
+	// Construir la URL de la consulta
+	queryURL := fmt.Sprintf("http://localhost:9200/items/_search?q=userId:%d", userId)
+
+	// Realizar una solicitud HTTP GET directa a la API de Elasticsearch con la consulta
+	resp, err := http.Get(queryURL)
+	if err != nil {
+		return nil, fmt.Errorf("Error al realizar la solicitud HTTP a Elasticsearch: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Leer el cuerpo de la respuesta
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Error al leer el cuerpo de la respuesta: %v", err)
+	}
+
+	// Decodificar el cuerpo JSON en la estructura RespuestaElasticsearch
+	var respuesta map[string]interface{}
+	if err := json.Unmarshal(body, &respuesta); err != nil {
+		return nil, fmt.Errorf("Error al decodificar la respuesta JSON: %v", err)
+	}
+
+	// Verificar que la respuesta tenga contenido
+	hits, ok := respuesta["hits"].(map[string]interface{})["hits"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("No se encontraron documentos en Elasticsearch para la consulta")
+	}
+
+	// Construir la lista de items a partir de los hits
+	var items dto.Items
+	for _, hit := range hits {
+		source, ok := hit.(map[string]interface{})["_source"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		var item dto.Item
+
+		// Utilizar json.Unmarshal para convertir automáticamente otros campos
+		itemData, err := json.Marshal(source)
+		if err != nil {
+			return nil, fmt.Errorf("Error al convertir el item: %v", err)
+		}
+		if err := json.Unmarshal(itemData, &item); err != nil {
+			return nil, fmt.Errorf("Error al convertir el item: %v", err)
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
+}

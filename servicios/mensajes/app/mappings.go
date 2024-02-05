@@ -12,7 +12,7 @@ func mapUrls() {
 	router.GET("/message/:id", controller.GetMessageById)
 	router.GET("/messagesByItem/:id", controller.GetMessagesByItemId)
 
-	router.POST("/message/", controller.PostMessage)
+	router.POST("/message", controller.PostMessage)
 	router.POST("/messages", controller.PostMessages)
 
 	router.DELETE("/message/:id", controller.DeleteMessageById)

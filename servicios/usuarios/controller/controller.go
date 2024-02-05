@@ -111,7 +111,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Create JWT token
-	expirationTime := time.Now().Add(24 * time.Hour) // Change the expiration time as needed
+	expirationTime := time.Now().Add(1 * time.Hour)
 	claims := &Claims{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -126,9 +126,12 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating token"})
 		return
 	}
+	a := strconv.Itoa(user.Id)
 
-	// Return the token to the client
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	c.JSON(http.StatusOK, gin.H{
+		"token":  tokenString,
+		"userId": a,
+	})
 }
 
 // Structure for JWT Claims

@@ -3,6 +3,7 @@ package controller
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	cliente "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/client"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/busqueda/dto"
@@ -47,4 +48,15 @@ func GetItemById(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, item)
+}
+
+func GetItemsByUserId(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("UserId"))
+	items, err := cliente.GetItemByUserId(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+		log.Printf(err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, items)
 }

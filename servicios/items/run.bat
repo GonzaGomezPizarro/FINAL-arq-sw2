@@ -1,12 +1,5 @@
 @echo off
 
-echo.
-echo --------------------------------------------------
-echo -     Creando Contenedor (mongo y memcached)     -
-echo --------------------------------------------------
-echo.
-docker-compose up -d
-echo.
 docker ps
 
 echo.

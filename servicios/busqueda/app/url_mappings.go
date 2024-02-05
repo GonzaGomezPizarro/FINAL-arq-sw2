@@ -10,6 +10,7 @@ func mapUrls() {
 	router.GET("/search/:searchQuery", controller.GetQuery)
 	router.GET("/searchAll", controller.GetAll)
 	router.GET("/item/:id", controller.GetItemById)
+	router.GET("/items/:UserId", controller.GetItemsByUserId)
 
 	log.Info("Finishing mappings configurations")
 }
