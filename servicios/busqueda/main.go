@@ -21,8 +21,9 @@ func main() {
 		panic(err)
 	}
 
+	app.StartRoute()
+
 	// Iniciar la escucha de mensajes en una goroutine
 	go notificacion.Receive()
 
-	app.StartRoute()
 }

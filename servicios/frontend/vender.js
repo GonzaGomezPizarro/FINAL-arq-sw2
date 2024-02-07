@@ -10,6 +10,16 @@ if (!token) {
     window.location.href = 'login.html';
 }
 
-function verPublicaciones(){}
-function verMensajes(){}
-function nuevaPublicacion(){}
+function verPublicaciones() {
+    // Redirigir a la página de publicaciones
+    window.location.href = 'publicaciones.html';
+}
+
+function nuevaPublicacion() {
+    // Redirigir a la página de nueva publicación   
+    window.location.href = 'nuevapublicacion.html';
+}
+
+function volver(){
+    window.location.href = 'index.html';
+}

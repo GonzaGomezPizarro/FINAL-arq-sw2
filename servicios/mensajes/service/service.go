@@ -56,6 +56,7 @@ func (s *messageService) GetMessages() (dto.Messages, e.ApiError) {
 		messageDto.Id = message.Id
 		messageDto.Content = message.Content
 		messageDto.ReceiverId = message.ReceiverId
+		messageDto.ItemId = message.ItemId
 		messagesDto = append(messagesDto, messageDto)
 	}
 
@@ -71,6 +72,7 @@ func (s *messageService) GetMessagesByUserId(id int) (dto.Messages, e.ApiError) 
 		messageDto.Id = message.Id
 		messageDto.Content = message.Content
 		messageDto.ReceiverId = message.ReceiverId
+		messageDto.ItemId = message.ItemId
 		messagesDto = append(messagesDto, messageDto)
 	}
 	return messagesDto, nil
@@ -85,6 +87,7 @@ func (s *messageService) GetMessagesByItemId(id string) (dto.Messages, e.ApiErro
 		messageDto.Id = message.Id
 		messageDto.Content = message.Content
 		messageDto.ReceiverId = message.ReceiverId
+		messageDto.ItemId = message.ItemId
 		messagesDto = append(messagesDto, messageDto)
 	}
 	return messagesDto, nil

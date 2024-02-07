@@ -3,6 +3,9 @@
 // Recuperar el resultado almacenado en el almacenamiento local
 var detalleResultado = JSON.parse(localStorage.getItem('detalleResultado'));
 
+console.log(detalleResultado)
+console.log(detalleResultado.id)
+
 // Obtener el elemento principal donde se mostrarán los detalles
 var detalleContainer = document.getElementById('detalleContainer');
 
@@ -36,9 +39,9 @@ function enviarMensaje() {
     if (mensaje) {
         // Construir el objeto JSON con la información requerida
         var mensajeData = {
-            "content": mensaje,
+            "content": String(mensaje),
             "receiver": detalleResultado.userId,
-            "item": detalleResultado.id
+            "item": String(detalleResultado.id) 
         };
 
         // Realizar la solicitud HTTP POST
@@ -61,7 +64,67 @@ function enviarMensaje() {
         // Limpia el campo de entrada después de enviar el mensaje
         mensajeInput.value = '';
     }
+    setTimeout(function() {
+        // Llama a la función getMessages después de 2 segundos
+        getMessages(detalleResultado.id);
+    }, 2000);
 }
 
 // Limpiar el resultado almacenado en el almacenamiento local después de mostrar los detalles
-localStorage.removeItem('detalleResultado');
+//localStorage.removeItem('detalleResultado');
+
+function getMessages(itemId) {
+    // Construir la URL de la solicitud
+    itemId = String(itemId)
+    var url = `http://localhost:8092/messagesByItem/${itemId}`;
+
+    // Realizar la solicitud GET utilizando Fetch
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Mensajes relacionados con el ítem:", data);
+            if (data == null) { return; }
+            // Mostrar los mensajes en el contenedor de todos los mensajes
+            mostrarTodosMensajes(data);
+        })
+        .catch(error => {
+            console.error("Error al obtener mensajes:", error);
+        });
+}
+
+
+// Función para mostrar todos los mensajes en el contenedor correspondiente
+function mostrarTodosMensajes(mensajes) {
+    // Obtener el contenedor de mensajes
+    var mensajeContainer = document.getElementById('todosMensajesContainer');
+
+    // Limpiar el contenido anterior (si lo hay)
+    mensajeContainer.innerHTML = '';
+
+    // Iterar sobre cada mensaje y crear elementos HTML dinámicamente
+    mensajes.forEach(function(mensaje, index) {
+        // Crear un contenedor para cada mensaje
+        var mensajeDiv = document.createElement('div');
+        mensajeDiv.className = 'mensaje';
+
+        // Agregar contenido del mensaje al contenedor
+        var contenidoMensaje = document.createElement('p');
+        contenidoMensaje.textContent = mensaje.content;
+        mensajeDiv.appendChild(contenidoMensaje);
+
+        // Agregar el contenedor al elemento principal
+        mensajeContainer.appendChild(mensajeDiv);
+
+        // Agregar una línea divisoria después de cada elemento, excepto el último
+        if (index < mensajes.length - 1) {
+            var lineaDivisoria = document.createElement('hr');
+            mensajeContainer.appendChild(lineaDivisoria);
+        }
+    });
+}
+
+getMessages(detalleResultado.id);
+
+function volver(){
+    window.location.href = 'index.html';
+}

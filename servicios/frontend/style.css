@@ -39,3 +39,15 @@ footer {
     padding: 10px;
     text-align: center;
 }
+
+body.centrado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Ajusta la altura al 100% del viewport */
+}
+
+#botonesContainer{
+    margin-top: 5%;
+}

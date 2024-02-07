@@ -8,7 +8,7 @@ import (
 func mapUrls() {
 
 	router.GET("/messages", controller.GetMessages)
-	router.GET("/messagesByUser/:id", controller.GetMessagesByUserId)
+	router.GET("/messagesByUser/:id", controller.GetMessagesByUserId) //no esta devolviendo mensajes
 	router.GET("/message/:id", controller.GetMessageById)
 	router.GET("/messagesByItem/:id", controller.GetMessagesByItemId)
 
