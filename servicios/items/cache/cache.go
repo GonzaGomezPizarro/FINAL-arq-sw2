@@ -12,7 +12,7 @@ var (
 
 func init() {
 	// Configura la conexión a Memcached
-	memcacheClient = memcache.New("localhost:11211")
+	memcacheClient = memcache.New("memcached:11211")
 
 	// Verificar la conexión a Memcached
 	err := memcacheClient.Ping()

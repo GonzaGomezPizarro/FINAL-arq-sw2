@@ -1,9 +1,12 @@
 version: '3'
 
+networks:
+  mi_red:
+
 services:
   db_usuarios:
+    container_name: mysqlUsuarios
     image: mysql
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: secrett
       MYSQL_DATABASE: usuarios_db
@@ -13,3 +16,141 @@ services:
       - 3306:3306
     volumes:
       - ./data_usuarios:/var/lib/mysql
+    networks:
+      - mi_red
+
+  db_mensajes:
+    container_name: mysqlMensajes
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secrett
+      MYSQL_DATABASE: mensajes_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    ports:
+      - 3307:3306
+    volumes:
+      - ./data_mensajes:/var/lib/mysql
+    networks:
+      - mi_red
+
+  rabbitmq:
+    container_name: rabbit
+    image: "rabbitmq:latest"
+    ports:
+      - "5672:5672"  # Puerto predeterminado para AMQP
+      - "15672:15672"  # Puerto para la interfaz web de administración
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - mi_red
+
+  mongo:
+    container_name: mongo
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: CONTRASENA
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data:/data/db
+    networks:
+      - mi_red
+
+  memcached:
+    container_name: memcached
+    image: memcached:latest
+    command: ["memcached", "-m", "64"] # Limito el tamaño de la cache a 64 megabytes y le saco el tiempo a cad objeto cargado
+    ports:
+      - 11211:11211
+    networks:
+      - mi_red
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    mem_limit: 1g
+    networks:
+      - mi_red
+
+  usuarios:
+    container_name: usuarios
+    build:
+      context: ./usuarios
+    ports:
+      - "8090:8090"
+    depends_on:
+      db_usuarios:
+        condition: service_started
+    networks:
+      - mi_red
+
+  busqueda:
+    container_name: busqueda
+    build:
+      context: ./busqueda
+    ports:
+      - "8000:8000"
+    depends_on:
+      items:
+        condition: service_started
+      elasticsearch:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    networks:
+      - mi_red
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+    ports:
+      - "3000:8080"
+    depends_on:
+      items:
+        condition: service_started
+      usuarios:
+        condition: service_started
+      mensajes:
+        condition: service_started
+      busqueda:
+        condition: service_started
+    networks:
+      - mi_red
+
+  items:
+    container_name: items
+    build:
+      context: ./items
+    ports:
+      - "8091:8091"
+    depends_on:
+      memcached:
+        condition: service_started
+      mongo:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    networks:
+      - mi_red
+
+  mensajes:
+    container_name: mensajes
+    build:
+      context: ./mensajes
+    ports:
+      - "8092:8092"
+    depends_on:
+      db_mensajes:
+        condition: service_started
+    networks:
+      - mi_red
+  
+

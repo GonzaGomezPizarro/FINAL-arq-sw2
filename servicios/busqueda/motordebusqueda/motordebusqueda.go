@@ -9,7 +9,7 @@ import (
 
 const (
 	IndexName = "items"
-	URL       = "http://localhost:9200"
+	URL       = "http://elasticsearch:9200"
 )
 
 func init() {
