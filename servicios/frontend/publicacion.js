@@ -37,7 +37,7 @@ function volver(){
     window.location.href = 'publicaciones.html';
 }
 
-function eliminarPublicacion8(){
+function eliminarPublicacion(){
 
 }
 // Función para mostrar un formulario de edición

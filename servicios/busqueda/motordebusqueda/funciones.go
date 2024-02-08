@@ -40,7 +40,7 @@ func IndexAll() error {
 
 // getAllItemsFromService obtiene todos los items del servicio de items
 func getAllItemsFromService() (dto.Items, error) {
-	resp, err := http.Get("http://localhost:8091/items")
+	resp, err := http.Get("http://items:8091/items")
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func Revisar(id string) error {
 // obtenerJSONItem realiza una solicitud HTTP GET al servicio de items para obtener el JSON del ítem.
 func obtenerJSONItem(id string) ([]byte, error) {
 	// Construir la URL para obtener el JSON del ítem
-	url := "http://localhost:8091/item/" + id
+	url := "http://items:8091/item/" + id
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

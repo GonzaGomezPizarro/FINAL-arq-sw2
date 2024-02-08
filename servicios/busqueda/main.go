@@ -21,9 +21,16 @@ func main() {
 		panic(err)
 	}
 
-	app.StartRoute()
+	go func() {
+		for {
+			err := notificacion.Receive()
+			if err != nil {
+				log.Println("Error recibiendo notificación:", err)
+				log.Println("Intentando volver a iniciar la recepción de notificaciones...")
+			}
+		}
+	}()
 
-	// Iniciar la escucha de mensajes en una goroutine
-	go notificacion.Receive()
+	app.StartRoute()
 
 }

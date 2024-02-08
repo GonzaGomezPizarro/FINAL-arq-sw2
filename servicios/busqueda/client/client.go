@@ -14,7 +14,7 @@ import (
 func GetQuery(query string) (dto.Items, error) {
 	// Construye la URL de la consulta
 	encodedQuery := url.QueryEscape(query)
-	queryURL := fmt.Sprintf("http://localhost:9200/items/_search?q=%s*", encodedQuery)
+	queryURL := fmt.Sprintf("http://elasticsearch:9200/items/_search?q=%s*", encodedQuery)
 
 	// Realiza una solicitud HTTP GET directa a la API de Elasticsearch con la consulta
 	resp, err := http.Get(queryURL)
@@ -52,7 +52,7 @@ func GetQuery(query string) (dto.Items, error) {
 // GetAll trae todos los elementos del índice IndexName y los devuelve en dto.Items
 func GetAll() (dto.Items, error) {
 	// Realiza una solicitud HTTP GET directa a la API de Elasticsearch
-	resp, err := http.Get("http://localhost:9200/items/_search?q=*")
+	resp, err := http.Get("http://elasticsearch:9200/items/_search?q=*")
 	if err != nil {
 		return dto.Items{}, fmt.Errorf("Error al realizar la solicitud HTTP a Elasticsearch: %v", err)
 	}
@@ -86,7 +86,7 @@ func GetAll() (dto.Items, error) {
 
 // GetItemById obtiene el documento que coincide con el ID dado del índice IndexName
 func GetItemById(id string) (dto.Item, error) {
-	url := "http://localhost:9200/items/_doc/" + id
+	url := "http://elasticsearch:9200/items/_doc/" + id
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -117,7 +117,7 @@ func GetItemById(id string) (dto.Item, error) {
 
 func GetItemByUserId(userId int) (dto.Items, error) {
 	// Construir la URL de la consulta
-	queryURL := fmt.Sprintf("http://localhost:9200/items/_search?q=userId:%d", userId)
+	queryURL := fmt.Sprintf("http://elasticsearch:9200/items/_search?q=userId:%d", userId)
 
 	// Realizar una solicitud HTTP GET directa a la API de Elasticsearch con la consulta
 	resp, err := http.Get(queryURL)

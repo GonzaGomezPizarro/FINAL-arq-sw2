@@ -9,19 +9,17 @@ import (
 	rabbit "github.com/rabbitmq/amqp091-go"
 )
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Println(msg, err)
-	}
-}
-
-func Receive() {
+func Receive() error {
 	conn, err := rabbit.Dial("amqp://guest:guest@rabbit:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	if err != nil {
+		return err
+	}
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -32,7 +30,9 @@ func Receive() {
 		false,   // no-wait
 		nil,     // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	if err != nil {
+		return err
+	}
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -43,7 +43,9 @@ func Receive() {
 		false,  // no-wait
 		nil,    // args
 	)
-	failOnError(err, "Failed to register a consumer")
+	if err != nil {
+		return err
+	}
 	log.Println(" -> Escuchando mensajes... ")
 
 	// Consumir mensajes continuamente
@@ -68,6 +70,7 @@ func Receive() {
 		}
 		log.Println(" -> Escuchando mensajes... ")
 	}
+	return nil
 }
 
 // Función para intentar actualizar con retry
