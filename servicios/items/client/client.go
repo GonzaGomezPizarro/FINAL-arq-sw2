@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/cache"
+	cacheLocal "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/cachelocal"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/database"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/model"
 	notificacion "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/notificaciones"
@@ -16,9 +17,22 @@ import (
 )
 
 func GetItemById(id string) (model.Item, error) {
+	//intentar obtener item from cchelocal
+	i, bul := cacheLocal.CacheInstance.Get(id)
+	if bul == true {
+		log.Println(" -> Encontrado en cacheLocal")
+		return i, nil
+	}
+
 	// Intenta obtener el objeto de Memcached
 	cachedItem, err := GetItemFromCache(id)
 	if err == nil {
+		bul := cacheLocal.CacheInstance.Set(cachedItem)
+		if bul == true {
+			log.Println(" -> Almacenado en cacheLocal")
+		} else {
+			log.Println(" -> Error al almacenar en cacheLocal")
+		}
 		return cachedItem, nil
 	}
 
@@ -36,13 +50,23 @@ func GetItemById(id string) (model.Item, error) {
 		log.Println(err)
 		return model.Item{}, errors.New("Item not found")
 	}
-
+	log.Println(" -> Encontrdo en BD")
 	// Almacena el objeto en Memcached solo si se encontró en la base de datos
 	cachedItem, errr := InsertItemToCache(item, item.Id.Hex())
 	if errr != nil {
 		log.Println(errr)
 	}
-	log.Println("encontrado en base de datos pero no en cache")
+
+	// insertar en cacheLocal
+	ii := cacheLocal.CacheInstance.Set(item)
+	if ii == true {
+		log.Println(" -> Almacenado en cacheLocal")
+	} else {
+		log.Println(" -> Error al almacenar en cacheLocal")
+	}
+
+	//
+
 	return item, nil
 }
 
@@ -76,7 +100,17 @@ func GetItems() (model.Items, error) { // voy directo a base de datos por que tr
 	for i := 0; i < 50 && i < len(items); i++ {
 		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
 		if err != nil {
-			log.Println("Error al almacenar en la caché:", err)
+			log.Println(" -> Error al almacenar en la caché:", err)
+		}
+	}
+
+	// guarda los primeros 10 items en cachelocal
+	for i := 0; i < 10 && i < len(items); i++ {
+		bul := cacheLocal.CacheInstance.Set(items[i])
+		if bul == false {
+			log.Println(" -> Error al almacecenar en cacheLocal: ", items[i])
+		} else {
+			log.Println(" -> Almacenado en cacheLocal", items[i])
 		}
 	}
 
@@ -98,15 +132,23 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 	objectID := res.InsertedID.(primitive.ObjectID)
 	item.Id = objectID
 
-	//notificamos que se modifico un nuevo item
-	id := item.Id.Hex()
-	notificacion.Send(id)
-
 	// Guardar el ítem en la caché
 	_, err = InsertItemToCache(item, item.Id.Hex())
 	if err != nil {
 		log.Println("Error al almacenar en caché:", err)
 	}
+
+	// Guardar item en cacheLocal
+	bul := cacheLocal.CacheInstance.Set(item)
+	if bul == true {
+		log.Println(" -> Almacenado en cacheLocal")
+	} else {
+		log.Println(" -> Error al almacenar en cacheLocal")
+	}
+
+	//notificamos que se modifico un nuevo item
+	id := item.Id.Hex()
+	notificacion.Send(id)
 
 	return item, nil
 }
@@ -140,18 +182,29 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 		items[i].Id = id
 	}
 
-	for i := 0; i < len(items); i++ {
-		//notificamos que se modifico cada item
-		id := items[i].Id.Hex()
-		notificacion.Send(id)
-	}
-
 	// Guarda los primeros 50 items en la caché
 	for i := 0; i < 50 && i < len(items); i++ {
 		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
 		if err != nil {
 			log.Println("Error al almacenar en la caché:", err)
 		}
+	}
+
+	// Guarda los primeros 10 items en la cachéLocal
+	for i := 0; i < 10 && i < len(items); i++ {
+		bul := cacheLocal.CacheInstance.Set(items[i])
+		if bul == true {
+			log.Println(" -> Almacenado en cacheLocal")
+		} else {
+			log.Println(" -> Error al almacenar en cacheLocal")
+		}
+
+	}
+
+	for i := 0; i < len(items); i++ {
+		//notificamos que se modifico cada item
+		id := items[i].Id.Hex()
+		notificacion.Send(id)
 	}
 
 	return items, nil
@@ -185,6 +238,9 @@ func DeleteItem(itemId string) e.ApiError {
 		log.Println("item deleted from cache", objectId)
 	}
 
+	//borrar el item de la cacheLocal
+	cacheLocal.CacheInstance.Delete(itemId)
+
 	return nil
 }
 
@@ -202,7 +258,7 @@ func InsertItemToCache(item model.Item, id string) (model.Item, error) {
 		return model.Item{}, errors.New("Error almacenando en Memcached")
 	}
 
-	log.Println("Item almacenado en cache")
+	log.Println(" -> Item almacenado en cache")
 
 	// Devuelve el item
 	return item, nil
@@ -223,6 +279,6 @@ func GetItemFromCache(id string) (model.Item, error) {
 		return model.Item{}, errors.New("Error decoding cached item")
 	}
 
-	log.Println("Item encontrado en cache")
+	log.Println(" -> Encontrado en Memcached")
 	return item, nil
 }

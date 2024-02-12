@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/dto"
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/model"
 )
 
 // CacheLocal es una estructura que representa una caché local.
@@ -14,12 +14,12 @@ type CacheLocal struct {
 }
 
 type cacheItem struct {
-	Item      dto.Item
+	Item      model.Item
 	ExpiresAt time.Time
 }
 
 var (
-	cacheInstance *CacheLocal
+	CacheInstance *CacheLocal
 	once          sync.Once
 )
 
@@ -33,14 +33,14 @@ func NewCache() *CacheLocal {
 // InitCache inicializa la caché y almacena su referencia en una variable global.
 func InitCache() {
 	once.Do(func() {
-		cacheInstance = NewCache()
+		CacheInstance = NewCache()
 	})
 }
 
 // Set establece un valor en la caché para una clave dada.
 // Retorna true si se logró insertar el valor en la caché, de lo contrario, retorna false.
-func (c *CacheLocal) Set(item dto.Item) bool {
-	key := item.Id
+func (c *CacheLocal) Set(item model.Item) bool {
+	key := item.Id.Hex()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if _, ok := c.data[key]; !ok {
@@ -52,7 +52,7 @@ func (c *CacheLocal) Set(item dto.Item) bool {
 
 // Get devuelve el valor almacenado en la caché para una clave dada.
 // Si el ítem ha expirado, se elimina de la caché y se retorna false.
-func (c *CacheLocal) Get(key string) (dto.Item, bool) {
+func (c *CacheLocal) Get(key string) (model.Item, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	if item, ok := c.data[key]; ok {
@@ -63,5 +63,14 @@ func (c *CacheLocal) Get(key string) (dto.Item, bool) {
 			delete(c.data, key)
 		}
 	}
-	return dto.Item{}, false
+	return model.Item{}, false
+}
+
+// Delete elimina un elemento de la caché local dado su clave.
+func (c *CacheLocal) Delete(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, ok := c.data[key]; ok {
+		delete(c.data, key)
+	}
 }
