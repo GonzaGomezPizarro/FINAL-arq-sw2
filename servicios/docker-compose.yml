@@ -4,7 +4,7 @@ networks:
   mi_red:
 
 services:
-  db_usuarios:
+  mysqlUsuarios:
     container_name: mysqlUsuarios
     image: mysql
     environment:
@@ -19,7 +19,7 @@ services:
     networks:
       - mi_red
 
-  db_mensajes:
+  mysqlMensajes:
     container_name: mysqlMensajes
     image: mysql
     environment:
@@ -34,7 +34,7 @@ services:
     networks:
       - mi_red
 
-  rabbitmq:
+  rabbit:
     container_name: rabbit
     image: "rabbitmq:latest"
     ports:
@@ -78,6 +78,11 @@ services:
     mem_limit: 1g
     networks:
       - mi_red
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://elasticsearch:9200"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
   usuarios:
     container_name: usuarios
@@ -86,10 +91,11 @@ services:
     ports:
       - "8090:8090"
     depends_on:
-      db_usuarios:
+      mysqlUsuarios:
         condition: service_started
     networks:
       - mi_red
+    restart: on-failure:30
 
   busqueda:
     container_name: busqueda
@@ -101,8 +107,8 @@ services:
       items:
         condition: service_started
       elasticsearch:
-        condition: service_started
-      rabbitmq:
+        condition: service_healthy
+      rabbit:
         condition: service_started
     networks:
       - mi_red
@@ -136,10 +142,11 @@ services:
         condition: service_started
       mongo:
         condition: service_started
-      rabbitmq:
+      rabbit:
         condition: service_started
     networks:
       - mi_red
+    restart: on-failure:30
 
   mensajes:
     container_name: mensajes
@@ -148,9 +155,25 @@ services:
     ports:
       - "8092:8092"
     depends_on:
-      db_mensajes:
+      mysqlMensajes:
         condition: service_started
     networks:
       - mi_red
+    restart: on-failure:30
   
 
+  balanceador:
+    image: nginx
+    container_name: balanceador
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - mi_red
+    depends_on:
+      - mensajes
+      - items
+      - usuarios
+      - busqueda
+    
