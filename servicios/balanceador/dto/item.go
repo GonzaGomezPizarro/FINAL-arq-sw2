@@ -19,7 +19,6 @@ type Item struct {
 type Items []Item
 
 type RespuestaItem struct {
-	CorrelationId  int   `json:"correlation"`
 	Items          Items `json:"items"`
 	HttpStatusCode int   `json:"http_status_code"`
 }

@@ -15,7 +15,7 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./data_usuarios:/var/lib/mysql
+      - ./usuarios/data:/var/lib/mysql
     networks:
       - mi_red
 
@@ -30,7 +30,7 @@ services:
     ports:
       - 3307:3306
     volumes:
-      - ./data_mensajes:/var/lib/mysql
+      - ./mensajes/data:/var/lib/mysql
     networks:
       - mi_red
 
@@ -55,7 +55,7 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - ./data:/data/db
+      - ./items/data:/data/db
     networks:
       - mi_red
 
@@ -160,20 +160,15 @@ services:
     networks:
       - mi_red
     restart: on-failure:30
-  
 
-  balanceador:
-    image: nginx
-    container_name: balanceador
+  balanceador_items:
+    container_name: balanceador_items
+    build:
+      context: ./balanceador
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - "8095:8090"
+    depends_on:
+      - rabbit
     networks:
       - mi_red
-    depends_on:
-      - mensajes
-      - items
-      - usuarios
-      - busqueda
-    
+  

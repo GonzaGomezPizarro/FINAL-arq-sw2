@@ -1,10 +1,18 @@
 package notificacion
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"io/ioutil"
+	"net/http"
+
+	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/items/dto"
 	rabbit "github.com/rabbitmq/amqp091-go"
 )
 
@@ -47,4 +55,162 @@ func Send(id string) {
 		})
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s\n", body)
+}
+
+func Receive() error {
+	conn, err := rabbit.Dial("amqp://guest:guest@rabbit:5672/")
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		"Trabajo_para_items", // name
+		true,                 // durable
+		false,                // delete when unused
+		false,                // exclusive
+		false,                // no-wait
+		nil,                  // arguments
+	)
+	if err != nil {
+		return err
+	}
+
+	replyQueue, err := ch.QueueDeclare(
+		"Respuestas_para_items",
+		false, // no durable
+		true,  // auto eliminación cuando no hay consumidores
+		false, // no exclusivo
+		false, // no-wait
+		nil,   // argumentos
+	)
+	if err != nil {
+		return err
+	}
+
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	if err != nil {
+		return err
+	}
+	log.Println(" -> Escuchando mensajes... ")
+
+	// Consumir mensajes continuamente
+	for d := range msgs {
+		log.Printf(" [x] Received %s\n", d.Body)
+
+		// Parsear el mensaje recibido
+		parts := strings.Split(string(d.Body), ".")
+		if len(parts) != 3 {
+			log.Println("Invalid message format")
+			continue
+		}
+
+		metodo := parts[0]
+		url := parts[1]
+		jsonn := parts[2]
+
+		// Realizar solicitudes internas basadas en el método y la URL
+		items, httpStatusCode, err := solicitudInterna(metodo, url, jsonn)
+		if err != nil {
+			log.Println("Internal request failed:", err)
+			continue
+		}
+
+		// Construir la respuesta en formato dto.RespuestaItem
+		respuesta := dto.RespuestaItem{
+			Items:          items,
+			HttpStatusCode: httpStatusCode,
+		}
+
+		// Serializar la respuesta a JSON
+		jsonResponse, err := json.Marshal(respuesta)
+		if err != nil {
+			log.Println("Failed to marshal response to JSON:", err)
+			continue
+		}
+
+		// Enviar la respuesta a la cola de respuesta
+		err = ch.Publish("", replyQueue.Name, false, false, rabbit.Publishing{
+			ContentType:   "application/json", // Cambiado a application/json
+			CorrelationId: d.CorrelationId,
+			Body:          jsonResponse, // Usar la respuesta serializada como cuerpo
+		})
+		if err != nil {
+			log.Println("Failed to send response to reply queue:", err)
+			continue
+		}
+		log.Printf(" [x] Sent response to reply queue\n")
+	}
+
+	return nil
+}
+
+func solicitudInterna(metodo string, path string, jsonn string) (dto.Items, int, error) {
+	url := "http://localhost:8091" + path //veremosssss
+	var items dto.Items
+
+	// Convertir el JSON en bytes, solo si no está vacío
+	var jsonBytes []byte
+	if jsonn != "" {
+		jsonBytes = []byte(jsonn)
+	}
+
+	// Crear una nueva solicitud HTTP
+	var req *http.Request
+	var err error
+	if metodo == "GET" || metodo == "DELETE" {
+		req, err = http.NewRequest(metodo, url, nil)
+	} else {
+		req, err = http.NewRequest(metodo, url, bytes.NewBuffer(jsonBytes))
+	}
+
+	if err != nil {
+		return items, 0, fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+
+	// Establecer la cabecera Content-Type si el JSON no está vacío
+	if jsonn != "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Realizar la solicitud HTTP interna
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return items, 500, fmt.Errorf("failed to perform internal HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Leer la respuesta
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return items, 500, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Verificar el código de estado de la respuesta
+	if resp.StatusCode != http.StatusOK {
+		return items, resp.StatusCode, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	// Deserializar la respuesta JSON en la estructura dto.Items si la respuesta no está vacía
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &items); err != nil {
+			return items, 0, fmt.Errorf("failed to unmarshal response body: %v", err)
+		}
+	}
+
+	return items, resp.StatusCode, nil
 }
