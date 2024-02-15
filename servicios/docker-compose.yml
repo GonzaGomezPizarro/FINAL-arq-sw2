@@ -12,8 +12,6 @@ services:
       MYSQL_DATABASE: usuarios_db
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
-    ports:
-      - 3306:3306
     volumes:
       - ./usuarios/data:/var/lib/mysql
     networks:
@@ -27,8 +25,6 @@ services:
       MYSQL_DATABASE: mensajes_db
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
-    ports:
-      - 3307:3306
     volumes:
       - ./mensajes/data:/var/lib/mysql
     networks:
@@ -37,9 +33,6 @@ services:
   rabbit:
     container_name: rabbit
     image: "rabbitmq:latest"
-    ports:
-      - "5672:5672"  # Puerto predeterminado para AMQP
-      - "15672:15672"  # Puerto para la interfaz web de administración
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -52,8 +45,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: CONTRASENA
-    ports:
-      - 27017:27017
     volumes:
       - ./items/data:/data/db
     networks:
@@ -63,8 +54,6 @@ services:
     container_name: memcached
     image: memcached:latest
     command: ["memcached", "-m", "64"] # Limito el tamaño de la cache a 64 megabytes y le saco el tiempo a cad objeto cargado
-    ports:
-      - 11211:11211
     networks:
       - mi_red
 
@@ -73,8 +62,6 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-    ports:
-      - "9200:9200"
     mem_limit: 1g
     networks:
       - mi_red
@@ -135,8 +122,6 @@ services:
     container_name: items
     build:
       context: ./items
-    ports:
-      - "8091:8091"
     depends_on:
       memcached:
         condition: service_started

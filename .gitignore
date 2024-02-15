@@ -1,7 +1,7 @@
 CONSIGNAS
 NOTAS.txt
-servicios/data/
-servicios/data_mensajes/
-servicios/data_usuarios/
+servicios/items/data
+servicios/mensajes/data
+servicios/usuarios/data
 Informe.docx
 ~$nforme.docx

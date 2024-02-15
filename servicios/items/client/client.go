@@ -19,7 +19,7 @@ import (
 func GetItemById(id string) (model.Item, error) {
 	//intentar obtener item from cchelocal
 	i, bul := cacheLocal.CacheInstance.Get(id)
-	if bul == true {
+	if bul {
 		log.Println(" -> Encontrado en cacheLocal")
 		return i, nil
 	}
@@ -28,7 +28,7 @@ func GetItemById(id string) (model.Item, error) {
 	cachedItem, err := GetItemFromCache(id)
 	if err == nil {
 		bul := cacheLocal.CacheInstance.Set(cachedItem)
-		if bul == true {
+		if bul {
 			log.Println(" -> Almacenado en cacheLocal")
 		} else {
 			log.Println(" -> Error al almacenar en cacheLocal")
@@ -41,25 +41,25 @@ func GetItemById(id string) (model.Item, error) {
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return model.Item{}, errors.New("Invalid ID format")
+		return model.Item{}, errors.New("invalid id format")
 	}
 
 	var item model.Item
 	err = db.Collection("items").FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&item)
 	if err != nil {
 		log.Println(err)
-		return model.Item{}, errors.New("Item not found")
+		return model.Item{}, errors.New("item not found")
 	}
 	log.Println(" -> Encontrdo en BD")
 	// Almacena el objeto en Memcached solo si se encontró en la base de datos
-	cachedItem, errr := InsertItemToCache(item, item.Id.Hex())
+	_, errr := InsertItemToCache(item, item.Id.Hex())
 	if errr != nil {
 		log.Println(errr)
 	}
 
 	// insertar en cacheLocal
 	ii := cacheLocal.CacheInstance.Set(item)
-	if ii == true {
+	if ii {
 		log.Println(" -> Almacenado en cacheLocal")
 	} else {
 		log.Println(" -> Error al almacenar en cacheLocal")
@@ -77,7 +77,7 @@ func GetItems() (model.Items, error) { // voy directo a base de datos por que tr
 	cursor, err := db.Collection("items").Find(context.Background(), bson.M{})
 	if err != nil {
 		log.Println(err)
-		return items, errors.New("Error fetching items")
+		return items, errors.New("error fetching items")
 	}
 
 	defer cursor.Close(context.Background())
@@ -93,27 +93,26 @@ func GetItems() (model.Items, error) { // voy directo a base de datos por que tr
 
 	if err := cursor.Err(); err != nil {
 		log.Println(err)
-		return items, errors.New("Error fetching items")
+		return items, errors.New("error fetching items")
 	}
 
 	// Guarda los primeros 50 items en la caché
 	for i := 0; i < 50 && i < len(items); i++ {
 		_, err := InsertItemToCache(items[i], items[i].Id.Hex())
 		if err != nil {
-			log.Println(" -> Error al almacenar en la caché:", err)
+			log.Println("Error al almacenar en la caché:", err)
 		}
 	}
 
-	// guarda los primeros 10 items en cachelocal
-	for i := 0; i < 10 && i < len(items); i++ {
-		bul := cacheLocal.CacheInstance.Set(items[i])
-		if bul == false {
-			log.Println(" -> Error al almacecenar en cacheLocal: ", items[i])
+	// Guarda los primeros 10 items en la cachéLocal
+	for j := 0; j < 10 && j < len(items); j++ {
+		bul := cacheLocal.CacheInstance.Set(items[j])
+		if bul {
+			log.Println(" -> Almacenado en cacheLocal")
 		} else {
-			log.Println(" -> Almacenado en cacheLocal", items[i])
+			log.Println(" -> Error al almacenar en cacheLocal")
 		}
 	}
-
 	return items, nil
 }
 
@@ -140,7 +139,7 @@ func NewItem(item model.Item) (model.Item, e.ApiError) {
 
 	// Guardar item en cacheLocal
 	bul := cacheLocal.CacheInstance.Set(item)
-	if bul == true {
+	if bul {
 		log.Println(" -> Almacenado en cacheLocal")
 	} else {
 		log.Println(" -> Error al almacenar en cacheLocal")
@@ -193,12 +192,11 @@ func NewItems(items model.Items) (model.Items, e.ApiError) {
 	// Guarda los primeros 10 items en la cachéLocal
 	for i := 0; i < 10 && i < len(items); i++ {
 		bul := cacheLocal.CacheInstance.Set(items[i])
-		if bul == true {
+		if bul {
 			log.Println(" -> Almacenado en cacheLocal")
 		} else {
 			log.Println(" -> Error al almacenar en cacheLocal")
 		}
-
 	}
 
 	for i := 0; i < len(items); i++ {
@@ -219,6 +217,18 @@ func DeleteItem(itemId string) e.ApiError {
 		return e.NewNotFoundApiError("No se encontró el item")
 	}
 
+	//borrar el item de la cacheLocal
+	cacheLocal.CacheInstance.Delete(itemId)
+
+	// Borrar el item de la caché
+	err = cache.DeleteFromCache("item:" + itemId)
+	if err != nil {
+		log.Println("Error al borrar de la caché:", err)
+	} else {
+		log.Println("item deleted from cache", objectId)
+	}
+
+	// borrar el item de la BD
 	filter := bson.M{"_id": objectId}
 	_, err = collection.DeleteOne(context.Background(), filter)
 	if err != nil {
@@ -230,17 +240,6 @@ func DeleteItem(itemId string) e.ApiError {
 	//notificamos que se modifico un nuevo item
 	notificacion.Send(itemId)
 
-	// Borrar el item de la caché
-	err = cache.DeleteFromCache("item:" + itemId)
-	if err != nil {
-		log.Println("Error al borrar de la caché:", err)
-	} else {
-		log.Println("item deleted from cache", objectId)
-	}
-
-	//borrar el item de la cacheLocal
-	cacheLocal.CacheInstance.Delete(itemId)
-
 	return nil
 }
 
@@ -249,13 +248,13 @@ func InsertItemToCache(item model.Item, id string) (model.Item, error) {
 	bsonItem, err := bson.Marshal(item)
 	if err != nil {
 		log.Println("Error marshaling item to BSON:", err)
-		return model.Item{}, errors.New("Error marshaling item to BSON")
+		return model.Item{}, errors.New("error marshaling item to bson")
 	}
 
 	err = cache.SetToCache("item:"+id, string(bsonItem))
 	if err != nil {
 		log.Println("Error almacenando en Memcached:", err)
-		return model.Item{}, errors.New("Error almacenando en Memcached")
+		return model.Item{}, errors.New("error almacenando en memcached")
 	}
 
 	log.Println(" -> Item almacenado en cache")
@@ -268,7 +267,7 @@ func GetItemFromCache(id string) (model.Item, error) {
 	// Intenta obtener el objeto de Memcached
 	cachedItem, err := cache.GetFromCache("item:" + id)
 	if err != nil {
-		return model.Item{}, errors.New("Item not found in cache")
+		return model.Item{}, errors.New("item not found in cache")
 	}
 
 	// Decodifica el objeto BSON
@@ -276,7 +275,7 @@ func GetItemFromCache(id string) (model.Item, error) {
 	err = bson.Unmarshal([]byte(cachedItem), &item)
 	if err != nil {
 		log.Println("Error decoding cached item:", err)
-		return model.Item{}, errors.New("Error decoding cached item")
+		return model.Item{}, errors.New("error decoding cached item")
 	}
 
 	log.Println(" -> Encontrado en Memcached")

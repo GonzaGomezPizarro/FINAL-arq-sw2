@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"io/ioutil"
@@ -113,21 +112,21 @@ func Receive() error {
 		log.Printf(" [x] Received %s\n", d.Body)
 
 		// Parsear el mensaje recibido
-		parts := strings.Split(string(d.Body), ".")
-		if len(parts) != 3 {
-			log.Println("Invalid message format")
-			continue
+		var trabajo dto.TrabajoItem
+		if err := json.Unmarshal(d.Body, &trabajo); err != nil {
+			log.Println("Failed to parse message:", err)
+			return err
 		}
 
-		metodo := parts[0]
-		url := parts[1]
-		jsonn := parts[2]
+		metodo := trabajo.Metodo
+		url := trabajo.Url
+		jsonn := trabajo.Jsonn
 
 		// Realizar solicitudes internas basadas en el método y la URL
 		items, httpStatusCode, err := solicitudInterna(metodo, url, jsonn)
 		if err != nil {
 			log.Println("Internal request failed:", err)
-			continue
+			return err
 		}
 
 		// Construir la respuesta en formato dto.RespuestaItem
@@ -140,18 +139,19 @@ func Receive() error {
 		jsonResponse, err := json.Marshal(respuesta)
 		if err != nil {
 			log.Println("Failed to marshal response to JSON:", err)
-			continue
+			return err
 		}
 
 		// Enviar la respuesta a la cola de respuesta
-		err = ch.Publish("", replyQueue.Name, false, false, rabbit.Publishing{
-			ContentType:   "application/json", // Cambiado a application/json
+		err = ch.PublishWithContext(context.Background(), "", replyQueue.Name, false, false, rabbit.Publishing{
+			ContentType:   "application/json",
 			CorrelationId: d.CorrelationId,
-			Body:          jsonResponse, // Usar la respuesta serializada como cuerpo
+			Body:          jsonResponse,
 		})
+
 		if err != nil {
 			log.Println("Failed to send response to reply queue:", err)
-			continue
+			return err
 		}
 		log.Printf(" [x] Sent response to reply queue\n")
 	}
@@ -179,7 +179,7 @@ func solicitudInterna(metodo string, path string, jsonn string) (dto.Items, int,
 	}
 
 	if err != nil {
-		return items, 0, fmt.Errorf("failed to create HTTP request: %v", err)
+		return dto.Items{}, 500, fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 
 	// Establecer la cabecera Content-Type si el JSON no está vacío
@@ -190,26 +190,30 @@ func solicitudInterna(metodo string, path string, jsonn string) (dto.Items, int,
 	// Realizar la solicitud HTTP interna
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return items, 500, fmt.Errorf("failed to perform internal HTTP request: %v", err)
+		return dto.Items{}, 500, fmt.Errorf("failed to perform internal HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// Leer la respuesta
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return items, 500, fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	// Verificar el código de estado de la respuesta
-	if resp.StatusCode != http.StatusOK {
-		return items, resp.StatusCode, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return dto.Items{}, 500, fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	// Deserializar la respuesta JSON en la estructura dto.Items si la respuesta no está vacía
 	if len(body) > 0 {
-		if err := json.Unmarshal(body, &items); err != nil {
-			return items, 0, fmt.Errorf("failed to unmarshal response body: %v", err)
+		if path == "/items" {
+			if err := json.Unmarshal(body, &items); err != nil {
+				return items, 0, fmt.Errorf("failed to unmarshal response body: %v", err)
+			}
+		} else {
+			var item dto.Item
+			if err := json.Unmarshal(body, &item); err != nil {
+				return items, 0, fmt.Errorf("failed to unmarshal response body: %v", err)
+			}
+			items = append(items, item)
 		}
+
 	}
 
 	return items, resp.StatusCode, nil

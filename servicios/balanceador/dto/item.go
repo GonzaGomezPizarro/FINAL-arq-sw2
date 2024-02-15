@@ -22,3 +22,9 @@ type RespuestaItem struct {
 	Items          Items `json:"items"`
 	HttpStatusCode int   `json:"http_status_code"`
 }
+
+type TrabajoItem struct {
+	Metodo string `json:"metodo"`
+	Url    string `json:"url"`
+	Jsonn  string `json:"jsonn"`
+}

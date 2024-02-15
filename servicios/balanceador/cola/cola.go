@@ -80,14 +80,27 @@ func SendToItems(metodo string, url string, jsonn string) (dto.Items, int, error
 	defer cancel()
 
 	idMensaje++
-	props := rabbit.Publishing{
-		ContentType:   "text/plain",
-		CorrelationId: strconv.Itoa(idMensaje),
-		ReplyTo:       replyQueue.Name,
+
+	body := dto.TrabajoItem{
+		Metodo: metodo,
+		Url:    url,
+		Jsonn:  jsonn,
 	}
 
-	body := metodo + "." + url + "." + jsonn
-	err = ch.PublishWithContext(ctx, "", q.Name, false, false, props)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Println("Failed to marshal body to JSON:", err)
+		return dto.Items{}, 500, err
+	}
+
+	// Luego, puedes enviar bodyBytes en lugar de body
+	err = ch.PublishWithContext(ctx, "", q.Name, false, false, rabbit.Publishing{
+		ContentType:   "application/json",
+		CorrelationId: strconv.Itoa(idMensaje),
+		ReplyTo:       replyQueue.Name,
+		Body:          bodyBytes,
+		DeliveryMode:  rabbit.Persistent,
+	})
 	if err != nil {
 		log.Println("Failed to publish a message:", err)
 		return dto.Items{}, 503, err // Servicio no disponible
@@ -108,7 +121,7 @@ func SendToItems(metodo string, url string, jsonn string) (dto.Items, int, error
 			}
 			return response.Items, response.HttpStatusCode, nil
 		} else {
-			err = ch.Publish("", replyQueue.Name, false, false, rabbit.Publishing{
+			err = ch.PublishWithContext(context.Background(), "", replyQueue.Name, false, false, rabbit.Publishing{
 				ContentType:   "text/plain",
 				CorrelationId: d.CorrelationId,
 				Body:          d.Body,

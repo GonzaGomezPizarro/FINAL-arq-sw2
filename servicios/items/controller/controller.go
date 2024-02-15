@@ -10,8 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var jwtKey = []byte("secret_key")
-
 func GetItemById(c *gin.Context) {
 	log.Debug("Item id to load: " + c.Param("id"))
 	id := c.Param("id")
@@ -20,26 +18,22 @@ func GetItemById(c *gin.Context) {
 	itemDto, err := service.ItemService.GetItemById(id)
 
 	if err != nil {
-		c.JSON(err.Status(), err)
-		c.JSON(http.StatusBadRequest, err.Error())
-		log.Error(err.Error())
+		c.JSON(err.Status(), dto.Item{})
 		return
 	}
 	c.JSON(http.StatusOK, itemDto)
 }
 
 func GetItems(c *gin.Context) {
-	var usersDto dto.Items
-	usersDto, err := service.ItemService.GetItems()
+	var itemsDto dto.Items
+	itemsDto, err := service.ItemService.GetItems()
 
 	if err != nil {
-		c.JSON(err.Status(), err)
-		c.JSON(http.StatusBadRequest, err.Error())
-		log.Error(err.Error())
+		c.JSON(err.Status(), dto.Items{})
 		return
 	}
 
-	c.JSON(http.StatusOK, usersDto)
+	c.JSON(http.StatusOK, itemsDto)
 }
 
 func NewItem(c *gin.Context) {
@@ -47,20 +41,18 @@ func NewItem(c *gin.Context) {
 	err := c.BindJSON(&itemDto)
 
 	if err != nil {
-		log.Error(err.Error())
-		c.JSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusInternalServerError, dto.Item{})
 		return
 	}
 
 	itemDto, errr := service.ItemService.NewItem(itemDto)
 
 	if errr != nil {
-		c.JSON(errr.Status(), errr)
-		log.Error(errr.Error())
+		c.JSON(errr.Status(), dto.Item{})
 		return
 	}
 
-	c.JSON(http.StatusOK, itemDto)
+	c.JSON(http.StatusCreated, itemDto)
 }
 
 func NewItems(c *gin.Context) {
@@ -68,20 +60,18 @@ func NewItems(c *gin.Context) {
 	err := c.BindJSON(&itemsDto)
 
 	if err != nil {
-		log.Error(err.Error())
-		c.JSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, dto.Items{})
 		return
 	}
 
 	itemsDto, errr := service.ItemService.NewItems(itemsDto)
 
 	if errr != nil {
-		c.JSON(errr.Status(), errr)
-		log.Error(errr.Error())
+		c.JSON(errr.Status(), dto.Items{})
 		return
 	}
 
-	c.JSON(http.StatusOK, itemsDto)
+	c.JSON(http.StatusCreated, itemsDto)
 }
 
 func DeleteItem(c *gin.Context) {
@@ -91,8 +81,7 @@ func DeleteItem(c *gin.Context) {
 	// Llamar al servicio para eliminar el usuario
 	errr := service.ItemService.DeleteItem(itemID)
 	if errr != nil {
-		c.JSON(500, errr)
-		log.Error(errr.Error())
+		c.Status(errr.Status())
 		return
 	}
 

@@ -40,7 +40,7 @@ func IndexAll() error {
 
 // getAllItemsFromService obtiene todos los items del servicio de items
 func getAllItemsFromService() (dto.Items, error) {
-	resp, err := http.Get("http://items:8091/items")
+	resp, err := http.Get("http://balanceador_items:8090/items")
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func indexDocument(id string, item dto.Item) error {
 
 	// Verificar si la respuesta indica un error
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("Error al indexar el documento. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("error al indexar el documento. código de estado: %d. respuesta: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
@@ -111,11 +111,13 @@ func Revisar(id string) error {
 		}
 	} else {
 		// Convertir el JSON a una estructura dto.Item
+		var itemsDto dto.Items
 		var itemDto dto.Item
-		err := json.Unmarshal(itemJSON, &itemDto)
+		err := json.Unmarshal(itemJSON, &itemsDto)
 		if err != nil {
 			return err
 		}
+		itemDto = itemsDto[0] // PING ---------------------------------------------------------
 
 		// Indexar o actualizar el ítem en Elasticsearch
 		err = indexDocument(id, itemDto)
@@ -130,7 +132,7 @@ func Revisar(id string) error {
 // obtenerJSONItem realiza una solicitud HTTP GET al servicio de items para obtener el JSON del ítem.
 func obtenerJSONItem(id string) ([]byte, error) {
 	// Construir la URL para obtener el JSON del ítem
-	url := "http://items:8091/item/" + id
+	url := "http://balanceador_items:8090/item/" + id
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -152,7 +154,7 @@ func obtenerJSONItem(id string) ([]byte, error) {
 		return body, nil
 	}
 
-	return nil, fmt.Errorf("Error al obtener el JSON del ítem. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
+	return nil, fmt.Errorf("error al obtener el json del ítem. código de estado: %d. respuesta: %s", resp.StatusCode, string(body))
 }
 
 func deleteDocument(id string) error {
@@ -181,7 +183,7 @@ func deleteDocument(id string) error {
 
 	// Verificar si la respuesta indica un error
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("Error al eliminar el documento. Código de estado: %d. Respuesta: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("error al eliminar el documento. código de estado: %d. respuesta: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
