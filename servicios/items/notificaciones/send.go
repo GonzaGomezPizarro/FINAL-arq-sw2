@@ -71,11 +71,11 @@ func Receive() error {
 
 	q, err := ch.QueueDeclare(
 		"Trabajo_para_items", // name
-		true,                 // durable
-		false,                // delete when unused
-		false,                // exclusive
-		false,                // no-wait
-		nil,                  // arguments
+		false,                // no durable
+		true,
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
 	)
 	if err != nil {
 		return err
@@ -84,11 +84,12 @@ func Receive() error {
 	replyQueue, err := ch.QueueDeclare(
 		"Respuestas_para_items",
 		false, // no durable
-		true,  // auto eliminación cuando no hay consumidores
+		false, // not delete when unused
 		false, // no exclusivo
 		false, // no-wait
 		nil,   // argumentos
 	)
+
 	if err != nil {
 		return err
 	}

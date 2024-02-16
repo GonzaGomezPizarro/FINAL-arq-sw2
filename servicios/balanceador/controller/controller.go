@@ -3,12 +3,12 @@ package controller
 import (
 	"log"
 	"net/http"
+	"strings"
 
+	cacheLocal "github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/balanceador/cachelocal"
 	"github.com/GonzaGomezPizarro/FINAL-arq-sw2/servicios/balanceador/cola"
 	"github.com/gin-gonic/gin"
 )
-
-var jwtKey = []byte("secret_key")
 
 func GetToItems(c *gin.Context) {
 	url := c.Request.URL.String() // Obtener la URL solicitada
@@ -16,14 +16,47 @@ func GetToItems(c *gin.Context) {
 
 	jsonn := "" // vacio por que no se usa
 
-	items, httpStatusCode, err := cola.SendToItems("GET", url, jsonn)
+	if url == "/items" {
+		items, httpStatusCode, err := cola.SendToItems("GET", url, jsonn)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			log.Println(err.Error())
+			return
+		}
+		c.JSON(httpStatusCode, items)
+		return
+	}
+
+	// Si la URL es para obtener un ítem específico
+	// Obtener el ID del ítem de la URL
+	parts := strings.Split(url, "/")
+	if len(parts) != 3 {
+		// La URL no tiene el formato esperado, devolver un error
+		c.JSON(http.StatusBadRequest, "URL no válida")
+		log.Println("URL no válida")
+		return
+	}
+	itemID := parts[2]
+
+	// verificar la caché local primero
+	itemm, bul := cacheLocal.CacheInstance.Get(itemID)
+	if bul {
+		c.JSON(http.StatusOK, itemm)
+		return
+	}
+
+	//si no esta en cache
+	item, httpStatusCode, err := cola.SendToItems("GET", url, jsonn)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		log.Println(err.Error())
 		return
 	}
 
-	c.JSON(httpStatusCode, items)
+	//guardo en cachelocal
+	cacheLocal.CacheInstance.Set(item[0])
+
+	c.JSON(httpStatusCode, item)
 }
 
 func PostToItems(c *gin.Context) {
@@ -46,6 +79,9 @@ func PostToItems(c *gin.Context) {
 		return
 	}
 
+	//guardo en cachelocal
+	cacheLocal.CacheInstance.Set(items[0])
+
 	c.JSON(httpStatusCode, items)
 }
 
@@ -61,6 +97,9 @@ func DeleteToItems(c *gin.Context) {
 		log.Println(err.Error())
 		return
 	}
+
+	//guardo en cachelocal
+	cacheLocal.CacheInstance.Delete(items[0].Id)
 
 	c.JSON(httpStatusCode, items)
 }

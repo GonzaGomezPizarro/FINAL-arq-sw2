@@ -36,6 +36,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
     networks:
       - mi_red
 
@@ -47,6 +49,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: CONTRASENA
     volumes:
       - ./items/data:/data/db
+    ports:
+      - "27017:27017"
     networks:
       - mi_red
 
@@ -82,7 +86,6 @@ services:
         condition: service_started
     networks:
       - mi_red
-    restart: on-failure:30
 
   busqueda:
     container_name: busqueda
@@ -129,9 +132,10 @@ services:
         condition: service_started
       rabbit:
         condition: service_started
+    ports:
+      - "8091:8091"
     networks:
       - mi_red
-    restart: on-failure:30
 
   mensajes:
     container_name: mensajes
@@ -144,7 +148,6 @@ services:
         condition: service_started
     networks:
       - mi_red
-    restart: on-failure:30
 
   balanceador_items:
     container_name: balanceador_items

@@ -1,4 +1,8 @@
 var textobusqueda;
+var resultadosPorPagina = 10;
+var paginaActual = 1;
+
+var totalResultados = 0;
 
 // Cargar catálogo inicial
 buscarTodo();
@@ -11,24 +15,33 @@ function buscar() {
         buscarTodo();
     } else {
         var url = "http://localhost:8000/search/" + textobusqueda;
-        cargarResultados(url);
+        cargarResultadosPorPagina(url, paginaActual);
     }
 }
 
 function buscarTodo() {
+    paginaActual = 1; // Reiniciar la página actual
     var url = "http://localhost:8000/searchAll";
-    cargarResultados(url);
+    cargarResultadosPorPagina(url, paginaActual);
 }
 
+function cargarResultadosPorPagina(url, pagina) {
+    var inicio = (pagina - 1) * resultadosPorPagina;
+    var fin = inicio + resultadosPorPagina;
 
-function cargarResultados(url) {
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log("Resultados de búsqueda:", data);
 
+            // Obtener el número total de resultados disponibles
+            totalResultados = data.length;
+
+            // Obtener los resultados de la página actual
+            var resultadosPagina = data.slice(inicio, fin);
+
             // Mapear cada resultado con la función que maneja la carga de imágenes
-            const resultadosConPromesas = data.map(resultado => {
+            const resultadosConPromesas = resultadosPagina.map(resultado => {
                 return cargarImagenes(resultado);
             });
 
@@ -47,7 +60,15 @@ function cargarResultados(url) {
         });
 }
 
-// Función para cargar imágenes de un resultado
+function irAPaginaSiguiente() {
+    var totalPaginas = Math.ceil(totalResultados / resultadosPorPagina);
+    if (paginaActual < totalPaginas) {
+        paginaActual++;
+        cargarResultadosPorPagina(url, paginaActual);
+    }
+}
+
+
 function cargarImagenes(resultado) {
     const imagenesPromesas = resultado.photos.map(photo => {
         return new Promise((resolve, reject) => {
@@ -64,50 +85,6 @@ function cargarImagenes(resultado) {
             resultado.imagenesCargadas = imagenesCargadas;
             return resultado;
         });
-}
-
-function mostrarResultados(resultados) {
-    var resultadosContainer = document.getElementById('resultadosContainer');
-    resultadosContainer.innerHTML = '';
-
-    resultados.forEach(function(resultado, index) {
-        var resultadoDiv = document.createElement('div');
-        resultadoDiv.className = 'resultado';
-
-        // Verificar si todas las imágenes están cargadas antes de agregarlas al contenedor
-        if (resultado.imagenesCargadas.every(imagen => imagen.complete)) {
-            resultado.imagenesCargadas.forEach(function(imagen) {
-                resultadoDiv.appendChild(imagen);
-            });
-
-            var titulo = document.createElement('h2');
-            titulo.textContent = resultado.title;
-            resultadoDiv.appendChild(titulo);
-
-            var descripcion = document.createElement('p');
-            descripcion.textContent = resultado.description;
-            resultadoDiv.appendChild(descripcion);
-
-            var botonDetalle = document.createElement('button');
-            botonDetalle.textContent = 'Ver Detalle';
-            botonDetalle.addEventListener('click', function() {
-                verDetalle(resultado);
-            });
-            resultadoDiv.appendChild(botonDetalle);
-
-            resultadosContainer.appendChild(resultadoDiv);
-
-            if (index < resultados.length - 1) {
-                var lineaDivisoria = document.createElement('hr');
-                resultadosContainer.appendChild(lineaDivisoria);
-            }
-        } else {
-            // Si no todas las imágenes están cargadas, espera y vuelve a intentar
-            setTimeout(function() {
-                mostrarResultados(resultados);
-            }, 100);
-        }
-    });
 }
 
 function mostrarResultados(resultados) {
@@ -150,6 +127,13 @@ function mostrarResultados(resultados) {
 function verDetalle(resultado) {
     localStorage.setItem('detalleResultado', JSON.stringify(resultado));
     window.location.href = 'detalle.html';
+}
+
+function irAPaginaAnterior() {
+    if (paginaActual > 1) {
+        paginaActual--;
+        buscar();
+    }
 }
 
 function irAVender() {

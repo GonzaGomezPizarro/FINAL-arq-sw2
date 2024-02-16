@@ -1,58 +1,47 @@
-// admin.js
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('fileInput');
+    const buttonEnviar = document.getElementById('enviarButton'); // Corregido: Seleccionamos el botón por su ID
 
-let currentPage = 1;
-const itemsPerPage = 10; // Número de elementos por página
-
-function cargarArchivo() {
-    // Tu función para cargar el archivo y realizar la solicitud POST
-    // ...
-
-    // Ejemplo: realizando la solicitud POST con datos ficticios
-    const data = { message: 'Datos cargados exitosamente' };
-    mostrarRespuesta(data);
-}
-
-function mostrarRespuesta(responseData) {
-    const resultadoContainer = document.getElementById('resultadoContainer');
-    resultadoContainer.innerHTML = `<div>${responseData.message}</div>`;
-
-    // Lógica para la paginación
-    const paginationContainer = document.getElementById('pagination');
-    paginationContainer.innerHTML = '';
-    const totalPages = Math.ceil(responseData.length / itemsPerPage);
-    for (let i = 1; i <= totalPages; i++) {
-        const button = document.createElement('button');
-        button.textContent = i;
-        button.addEventListener('click', () => {
-            currentPage = i;
-            mostrarPagina(responseData);
-        });
-        paginationContainer.appendChild(button);
-    }
-    // Mostrar la página actual
-    mostrarPagina(responseData);
-}
-
-function mostrarPagina(responseData) {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const itemsToShow = responseData.slice(startIndex, endIndex);
-
-    const resultadoContainer = document.getElementById('resultadoContainer');
-    resultadoContainer.innerHTML = '';
-    itemsToShow.forEach(item => {
-        const div = document.createElement('div');
-        div.textContent = item;
-        resultadoContainer.appendChild(div);
-    });
-
-    // Marcar el botón de paginación activo
-    const paginationButtons = document.querySelectorAll('#pagination button');
-    paginationButtons.forEach((button, index) => {
-        if (index + 1 === currentPage) {
-            button.classList.add('active');
+    buttonEnviar.addEventListener('click', function() {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const json = event.target.result;
+                enviarJSON(json);
+            };
+            reader.readAsText(file);
         } else {
-            button.classList.remove('active');
+            console.error('No se ha seleccionado ningún archivo.');
         }
     });
+});
+
+function enviarJSON(json) {
+    fetch('http://localhost:8095/items', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: json
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Ocurrió un error al enviar el archivo.');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('JSON enviado con éxito:', data);
+        mostrarMensaje('JSON enviado con éxito.');
+    })
+    .catch(error => {
+        console.error('Error al enviar el archivo:', error);
+        mostrarMensaje('Error al enviar el archivo. Por favor, inténtalo de nuevo.');
+    });
+}
+
+function mostrarMensaje(mensaje) {
+    const resultadoContainer = document.getElementById('resultadoContainer');
+    resultadoContainer.textContent = mensaje;
 }
