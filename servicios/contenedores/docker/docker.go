@@ -62,16 +62,16 @@ func GetImages() (dto.Imagenes, error) {
 	return imagenes, nil
 }
 
-func PostContenedor(imagen string, name string, externalPort int, internalPort int) (dto.Contenedor, error) {
+func PostContenedor(contenedor dto.Contenedor) (dto.Contenedor, error) {
 	// Construir los argumentos para el comando docker run
 	args := []string{"run", "-d", "--network=servicios_mi_red"}
-	if name != "" {
-		args = append(args, "--name", name)
+	if contenedor.Name != "" {
+		args = append(args, "--name", contenedor.Name)
 	}
-	if externalPort != 0 && internalPort != 0 {
-		args = append(args, "-p", fmt.Sprintf("%d:%d", externalPort, internalPort))
+	if contenedor.ExternalPort != 0 && contenedor.InternalPort != 0 {
+		args = append(args, "-p", fmt.Sprintf("%d:%d", contenedor.ExternalPort, contenedor.InternalPort))
 	}
-	args = append(args, imagen)
+	args = append(args, contenedor.Imagen.Name)
 
 	// Ejecutar el comando docker run
 	cmd := exec.Command("docker", args...)
@@ -118,14 +118,41 @@ func PostContenedor(imagen string, name string, externalPort int, internalPort i
 	}
 
 	// Extraer la información necesaria del contenedor
-	contenedor := dto.Contenedor{
-		Name:         containerName,
-		Id:           containerID,
-		Imagen:       dto.Imagen{Name: imagen},
-		Status:       containerInfo[0]["State"].(map[string]interface{})["Status"].(string),
-		InternalPort: internalPort,
-		ExternalPort: externalPort,
-	}
+	contenedor.Name = containerName
+	contenedor.Id = containerID
+	contenedor.Status = containerInfo[0]["State"].(map[string]interface{})["Status"].(string)
 
 	return contenedor, nil
+}
+
+func StartContenedor(id string) error {
+	// Ejecutar el comando 'docker start' para iniciar el contenedor con el ID proporcionado
+	cmd := exec.Command("docker", "start", id)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error al ejecutar el comando docker start: %v", err)
+	}
+	return nil
+}
+
+func StopContenedor(id string) error {
+	// Ejecutar el comando 'docker stop' para detener el contenedor con el ID proporcionado
+	cmd := exec.Command("docker", "stop", id)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error al ejecutar el comando docker stop: %v", err)
+	}
+	return nil
+}
+
+func DeleteContenedor(id string) error {
+	// Detener el contenedor antes de intentar eliminarlo
+	if err := StopContenedor(id); err != nil {
+		return fmt.Errorf("error al detener el contenedor: %v", err)
+	}
+
+	// Ejecutar el comando 'docker rm' para eliminar el contenedor con el ID proporcionado
+	cmd := exec.Command("docker", "rm", id)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error al ejecutar el comando docker rm: %v", err)
+	}
+	return nil
 }

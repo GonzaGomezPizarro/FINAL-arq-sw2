@@ -14,6 +14,9 @@ import (
 // IndexAll obtiene todos los items del servicio de items y los indexa en Elasticsearch
 func IndexAll() error {
 	// Obtener todos los items del servicio de items
+
+	DELETEItems()
+
 	items, err := getAllItemsFromService()
 	if err != nil {
 		return err
@@ -90,6 +93,33 @@ func indexDocument(id string, item dto.Item) error {
 	}
 
 	return nil
+}
+
+// DELETEItems envía una solicitud DELETE a la URL /items
+func DELETEItems() {
+	// Definir la URL a la que enviar la solicitud DELETE
+	url := URL + "/" + IndexName
+
+	// Crear una solicitud HTTP DELETE
+	req, _ := http.NewRequest("DELETE", url, nil)
+
+	// Realizar la solicitud HTTP DELETE
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error al enviar la solicitud DELETE:", err)
+		return // Sale de la función si hay un error, pero la ejecución continúa
+	}
+	defer resp.Body.Close()
+
+	// Comprobar el código de estado de la respuesta
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("La solicitud DELETE no se completó correctamente. Código de estado:", resp.StatusCode)
+		return // Sale de la función si el código de estado no es 200 OK, pero la ejecución continúa
+	}
+
+	// Si llega aquí, la solicitud DELETE se realizó correctamente
+	fmt.Println("La solicitud DELETE se realizó correctamente.")
 }
 
 //----------------------------------------------------------------

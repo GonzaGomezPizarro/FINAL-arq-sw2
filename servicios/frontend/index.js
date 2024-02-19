@@ -1,9 +1,7 @@
 var textobusqueda;
-var resultadosPorPagina = 10;
-var paginaActual = 1;
-
 var totalResultados = 0;
 
+console.log("Total resultados");
 // Cargar catálogo inicial
 buscarTodo();
 
@@ -14,80 +12,50 @@ function buscar() {
     if (!textobusqueda) {
         buscarTodo();
     } else {
-        var url = "http://localhost:8000/search/" + textobusqueda;
-        cargarResultadosPorPagina(url, paginaActual);
+        BuscarTextoBusqueda(textobusqueda);
     }
 }
 
 function buscarTodo() {
-    paginaActual = 1; // Reiniciar la página actual
-    var url = "http://localhost:8000/searchAll";
-    cargarResultadosPorPagina(url, paginaActual);
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://localhost:8000/searchAll", true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                console.log(data);
+                alert("Búsqueda realizada correctamente.");
+                mostrarResultados(data);
+            } else {
+                alert("Error al realizar la búsqueda.");
+            }
+        }
+    };
+    xhr.send();
 }
 
-function cargarResultadosPorPagina(url, pagina) {
-    var inicio = (pagina - 1) * resultadosPorPagina;
-    var fin = inicio + resultadosPorPagina;
-
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            console.log("Resultados de búsqueda:", data);
-
-            // Obtener el número total de resultados disponibles
-            totalResultados = data.length;
-
-            // Obtener los resultados de la página actual
-            var resultadosPagina = data.slice(inicio, fin);
-
-            // Mapear cada resultado con la función que maneja la carga de imágenes
-            const resultadosConPromesas = resultadosPagina.map(resultado => {
-                return cargarImagenes(resultado);
-            });
-
-            // Esperar hasta que todas las promesas se resuelvan
-            Promise.all(resultadosConPromesas)
-                .then(resultadosConImagenes => {
-                    // Mostrar resultados con imágenes
-                    mostrarResultados(resultadosConImagenes);
-                })
-                .catch(error => {
-                    console.error("Error al cargar imágenes:", error);
-                });
-        })
-        .catch(error => {
-            console.error("Error al realizar la solicitud:", error);
-        });
+function BuscarTextoBusqueda(textobusqueda) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://localhost:8000/search/" + textobusqueda, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                console.log(data);
+                alert("Búsqueda realizada correctamente.");
+                mostrarResultados(data);
+                
+            } else {
+                alert("Error al realizar la búsqueda.");
+            }
+        }
+    };
+    xhr.send();
 }
 
-function irAPaginaSiguiente() {
-    var totalPaginas = Math.ceil(totalResultados / resultadosPorPagina);
-    if (paginaActual < totalPaginas) {
-        paginaActual++;
-        cargarResultadosPorPagina(url, paginaActual);
-    }
-}
-
-
-function cargarImagenes(resultado) {
-    const imagenesPromesas = resultado.photos.map(photo => {
-        return new Promise((resolve, reject) => {
-            const imagen = new Image();
-            imagen.src = photo;
-            imagen.onload = () => resolve(imagen);
-            imagen.onerror = error => reject(error);
-        });
-    });
-
-    // Retornar una promesa que se resuelve con el resultado y las imágenes cargadas
-    return Promise.all(imagenesPromesas)
-        .then(imagenesCargadas => {
-            resultado.imagenesCargadas = imagenesCargadas;
-            return resultado;
-        });
-}
-
+// Función para mostrar los resultados con imágenes cargadas de forma asíncrona
 function mostrarResultados(resultados) {
+    console.log("Mostrando resultados...");
     var resultadosContainer = document.getElementById('resultadosContainer');
     resultadosContainer.innerHTML = '';
 
@@ -95,28 +63,34 @@ function mostrarResultados(resultados) {
         var resultadoDiv = document.createElement('div');
         resultadoDiv.className = 'resultado';
 
-        // Agregar imágenes al contenedor
-        resultado.imagenesCargadas.forEach(function(imagen) {
-            resultadoDiv.appendChild(imagen);
-        });
-
         var titulo = document.createElement('h2');
         titulo.textContent = resultado.title;
         resultadoDiv.appendChild(titulo);
+
+        var imagenesDiv = document.createElement('div');
+        imagenesDiv.className = 'imagenes'; // Contenedor de imágenes
+        resultadoDiv.appendChild(imagenesDiv);
 
         var descripcion = document.createElement('p');
         descripcion.textContent = resultado.description;
         resultadoDiv.appendChild(descripcion);
 
-        var botonDetalle = document.createElement('button');
-        botonDetalle.textContent = 'Ver Detalle';
-        botonDetalle.addEventListener('click', function() {
+        var infoHabitaciones = document.createElement('p');
+        infoHabitaciones.textContent = 'Bedrooms: ' + resultado.bedrooms + ' - Baños: ' + resultado.bathrooms;
+        resultadoDiv.appendChild(infoHabitaciones);
+
+        var verDetalleBtn = document.createElement('button');
+        verDetalleBtn.textContent = 'Ver Detalle';
+        verDetalleBtn.addEventListener('click', function() {
             verDetalle(resultado);
         });
-        resultadoDiv.appendChild(botonDetalle);
+        resultadoDiv.appendChild(verDetalleBtn);
 
         resultadosContainer.appendChild(resultadoDiv);
 
+        // Llamar a la función para cargar las imágenes de forma asíncrona
+        cargarImagenesAsincronas(resultado.photos, imagenesDiv);
+        
         if (index < resultados.length - 1) {
             var lineaDivisoria = document.createElement('hr');
             resultadosContainer.appendChild(lineaDivisoria);
@@ -124,16 +98,30 @@ function mostrarResultados(resultados) {
     });
 }
 
+// Función para cargar las imágenes de forma asíncrona
+function cargarImagenesAsincronas(photos, imagenesDiv) {
+    if (photos && photos.length > 0) {
+        photos.forEach(function(fotoBase64) {
+            var img = document.createElement('img');
+            img.alt = 'Foto del resultado';
+            img.className = 'imagen';
+            imagenesDiv.appendChild(img);
+
+            // Asignar el src de forma asíncrona
+            setTimeout(function() {
+                img.src = 'data:image/jpeg;base64,' + fotoBase64;
+            }, 0);
+        });
+    } else {
+        var sinImagenes = document.createElement('p');
+        sinImagenes.textContent = 'No hay fotos disponibles.';
+        imagenesDiv.appendChild(sinImagenes);
+    }
+}
+
 function verDetalle(resultado) {
     localStorage.setItem('detalleResultado', JSON.stringify(resultado));
     window.location.href = 'detalle.html';
-}
-
-function irAPaginaAnterior() {
-    if (paginaActual > 1) {
-        paginaActual--;
-        buscar();
-    }
 }
 
 function irAVender() {

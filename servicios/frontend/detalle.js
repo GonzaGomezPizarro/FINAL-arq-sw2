@@ -11,11 +11,12 @@ var detalleContainer = document.getElementById('detalleContainer');
 
 // Mostrar las fotos de la propiedad
 var fotosContainer = document.createElement('div');
-fotosContainer.className = 'fotos-container';
+fotosContainer.className = 'imagenes';
 
-detalleResultado.photos.forEach(function(foto) {
+detalleResultado.photos.forEach(function(fotoBase64) {
+    // Crear una imagen y configurar su fuente como una URL de imagen basada en datos base64
     var imagen = document.createElement('img');
-    imagen.src = foto;
+    imagen.src = 'data:image/jpeg;base64,' + fotoBase64;
     fotosContainer.appendChild(imagen);
 });
 

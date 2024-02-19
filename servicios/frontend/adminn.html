@@ -1,13 +1,42 @@
-<!-- aadminn.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Admin</title>
+    <title>Docker Admin</title>
 </head>
 <body>
+    <h1>Administrar Contenedores Docker</h1>
+    <p></p>
+    <h3>Contenedores</h3>
+    <p></p>
+    <div id="contenedor-info">
+        <!-- Aquí se mostrará la información de los contenedores -->
+    </div>
+    <p></p>
+    <button onclick="clickNuevoContenedor()">Nuevo Contenedor</button>
+    <!-- Formulario para agregar nuevo contenedor -->
+    <div id="formulario-nuevo-contenedor" style="display: none;">
+        <h3>Crear Nuevo Contenedor</h3>
+        <form id="nuevo-contenedor-form">
+            <label for="nombre">Nombre:</label><br>
+            <input type="text" id="nombre" name="nombre"><br>
+            <label for="nombre_imagen">Nombre de la Imagen:</label><br>
+            <input type="text" id="nombre_imagen" name="nombre_imagen"><br>
+            <label for="puerto_interno">Puerto Interno:</label><br>
+            <input type="number" id="puerto_interno" name="puerto_interno"><br>
+            <label for="puerto_externo">Puerto Externo:</label><br>
+            <input type="number" id="puerto_externo" name="puerto_externo"><br><br>
+            <button onclick="crearContenedor(event)">Crear</button>
+        </form>
+    </div>
+    <p></p>
+    <h3>Imagenes</h3>
+    <p></p>
+    <div id="imagen-info">
+        <!-- Aquí se mostrará la información de las imágenes -->
+    </div>
     
     <script src="adminn.js"></script>
 </body>

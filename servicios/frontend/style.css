@@ -48,6 +48,35 @@ body.centrado {
     height: 100vh; /* Ajusta la altura al 100% del viewport */
 }
 
+
+
 #botonesContainer{
     margin-top: 5%;
+}
+
+.running {
+    color: red; /* Texto verde para contenedores corriendo */
+}
+
+.stopped {
+    color: green; /* Texto rojo para contenedores parados */
+}
+
+.running-text {
+    color: green; /* Texto verde para contenedores corriendo */
+}
+
+.stopped-text {
+    color: red; /* Texto rojo para contenedores parados */
+}
+
+.imagenes img {
+    max-width: 400px; 
+    height: auto; /* Mantener la proporción de aspecto */
+    display: block; /* Asegurar que las imágenes no tengan espacios debajo */
+    margin-bottom: 10px; /* Espacio entre las imágenes */
+}
+.imagen {
+    display: inline-block;
+    margin-right: 10px; /* Espacio entre las imágenes */
 }

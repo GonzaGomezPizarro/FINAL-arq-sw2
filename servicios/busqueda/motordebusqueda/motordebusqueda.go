@@ -43,7 +43,6 @@ func checkConection() error {
 		return nil
 	}
 
-	var er error
-	er = fmt.Errorf(strconv.Itoa(resp.StatusCode))
+	var er error = fmt.Errorf(strconv.Itoa(resp.StatusCode))
 	return er
 }

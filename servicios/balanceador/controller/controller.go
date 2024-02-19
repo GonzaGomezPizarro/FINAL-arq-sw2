@@ -98,9 +98,6 @@ func DeleteToItems(c *gin.Context) {
 		return
 	}
 
-	//guardo en cachelocal
-	cacheLocal.CacheInstance.Delete(items[0].Id)
-
 	c.JSON(httpStatusCode, items)
 }
 

@@ -12,7 +12,10 @@ func mapUrls() {
 
 	router.POST("/contenedor", controller.NewContenedor)
 
-	router.DELETE("/contenedor/:id", controller.DeleteItem)
+	router.PUT("/Pcontenedor/:id", controller.PlayContenedor)
+	router.PUT("/Scontenedor/:id", controller.StopContenedor)
+
+	router.DELETE("/contenedor/:id", controller.DeleteContenedor)
 
 	log.Info("Finishing mappings configurations")
 }
